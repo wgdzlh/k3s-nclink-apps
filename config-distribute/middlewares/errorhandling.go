@@ -13,17 +13,17 @@ import (
 // auth middleware
 func AuthErrorHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		authHeader := c.Request.Header.Get("Authentication")
+		authHeader := c.Request.Header.Get("Authorization")
 		if len(authHeader) == 0 {
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-				"errors": "Authentication header is missing.",
+				"error": "Authorization header is missing.",
 			})
 			return
 		}
 
 		temp := strings.Split(authHeader, "Bearer")
 		if len(temp) < 2 {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"errors": "Wrong token."})
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Wrong token."})
 			return
 		}
 
@@ -56,6 +56,6 @@ func AuthErrorHandler() gin.HandlerFunc {
 // func GlobalErrorHandler(c *gin.Context) {
 // 	c.Next()
 // 	if len(c.Errors) > 0 {
-// 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"errors": c.Errors})
+// 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": c.Errors})
 // 	}
 // }

@@ -4,12 +4,11 @@ COPY go.mod .
 COPY go.sum .
 RUN go mod download
 COPY . .
-RUN CGO_ENABLED=0 go build -o config_dist
+RUN CGO_ENABLED=0 go build -o adapter
 
 FROM scratch
 WORKDIR /app
 COPY prod.env .env
-COPY --from=build /app/config_dist .
+COPY --from=build /app/adapter .
 
-EXPOSE 8082
-ENTRYPOINT ["./config_dist"]
+ENTRYPOINT ["./adapter"]
