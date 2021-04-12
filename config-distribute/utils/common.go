@@ -21,3 +21,11 @@ func EnvVar(key string, defaultVal string) string {
 	}
 	return value
 }
+
+func GetEnvOrExit(key string) string {
+	value := EnvVar(key, "")
+	if len(value) == 0 {
+		log.Fatal("env: " + key + " not set.")
+	}
+	return value
+}

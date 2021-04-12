@@ -17,3 +17,6 @@
 
 # local testing stuff
 testing
+
+# production stuff
+prod.env
