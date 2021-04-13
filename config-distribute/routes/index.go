@@ -1,8 +1,8 @@
 package routes
 
 import (
-	"config-distribute/controllers"
-	"config-distribute/middlewares"
+	"k3s-nclink-apps/config-distribute/controllers"
+	"k3s-nclink-apps/config-distribute/middlewares"
 	"net/http"
 
 	"github.com/gin-gonic/gin"

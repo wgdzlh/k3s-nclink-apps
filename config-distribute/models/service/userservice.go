@@ -1,8 +1,8 @@
 package service
 
 import (
-	"config-distribute/models/entity"
 	"context"
+	"k3s-nclink-apps/config-distribute/models/entity"
 
 	"github.com/kamva/mgm/v3"
 	"go.mongodb.org/mongo-driver/bson"

@@ -1,8 +1,8 @@
 package db
 
 import (
-	"config-distribute/utils"
 	"fmt"
+	"k3s-nclink-apps/utils"
 	"log"
 
 	"github.com/kamva/mgm/v3"

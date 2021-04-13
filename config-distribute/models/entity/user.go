@@ -1,8 +1,8 @@
 package entity
 
 import (
-	_ "config-distribute/models/db"
-	"config-distribute/utils"
+	_ "k3s-nclink-apps/config-distribute/models/db"
+	"k3s-nclink-apps/utils"
 
 	"time"
 

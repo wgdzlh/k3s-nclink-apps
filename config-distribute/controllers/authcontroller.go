@@ -1,8 +1,8 @@
 package controllers
 
 import (
-	"config-distribute/models/entity"
-	"config-distribute/models/service"
+	"k3s-nclink-apps/config-distribute/models/entity"
+	"k3s-nclink-apps/config-distribute/models/service"
 	"net/http"
 
 	"github.com/gin-gonic/gin"

@@ -1,8 +1,8 @@
 package main
 
 import (
-	"config-distribute/routes"
-	"config-distribute/utils"
+	"k3s-nclink-apps/config-distribute/routes"
+	"k3s-nclink-apps/utils"
 )
 
 func main() {

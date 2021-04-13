@@ -1,4 +1,4 @@
-module config-distribute
+module k3s-nclink-apps
 
 go 1.16
 

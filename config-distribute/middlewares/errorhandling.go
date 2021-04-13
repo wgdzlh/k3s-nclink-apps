@@ -1,8 +1,8 @@
 package middlewares
 
 import (
-	"config-distribute/models/service"
-	"config-distribute/utils"
+	"k3s-nclink-apps/config-distribute/models/service"
+	"k3s-nclink-apps/utils"
 	"net/http"
 	"strings"
 
