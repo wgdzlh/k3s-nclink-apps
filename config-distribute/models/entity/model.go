@@ -9,7 +9,7 @@ import (
 type Model struct {
 	mgm.DefaultModel `bson:",inline"`
 	Hostname         string `json:"hostname" bson:"hostname"`
-	Model            string `json:"password" bson:"password"`
+	Model            string `json:"model" bson:"model"`
 }
 
 func NewModel(hostname string, model string) *Model {

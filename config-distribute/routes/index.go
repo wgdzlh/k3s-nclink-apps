@@ -11,43 +11,42 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
-// func setAuthRoute(router *gin.Engine) {
-// 	authController := new(controllers.AuthController)
-// 	router.POST("/login", authController.Login)
-
-// 	authGroup := router.Group("/")
-// 	authGroup.Use(middlewares.AuthErrorHandler())
-// 	authGroup.GET("/ping", func(c *gin.Context) {
-// 		c.JSON(http.StatusOK, gin.H{"message": "pong"})
-// 	})
-// }
-
-// func InitRoute() *gin.Engine {
-// 	router := gin.New()
-// 	router.Use(gin.Logger())
-// 	router.Use(gin.Recovery())
-
-// 	setAuthRoute(router)
-// 	return router
-// }
-
+// auth server
 type authServer struct {
 	pb.UnimplementedAuthenticationServer
 	authController controllers.AuthController
 }
 
 func (s *authServer) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginReply, error) {
-	log.Infof("Received login request from: %v", in.GetName())
-	loginInfo := &entity.User{Name: in.GetName(), Password: in.GetPassword()}
-	token, _ := s.authController.Login(loginInfo)
-	return &pb.LoginReply{Token: token}, nil
+	name := in.GetName()
+	pass := in.GetPassword()
+	log.Infof("Received login request from: %v", name)
+	loginInfo := &entity.User{Name: name, Password: pass}
+	token, err := s.authController.Login(loginInfo)
+	return &pb.LoginReply{Token: token}, err
 }
 
 func (s *authServer) Ping(context.Context, *emptypb.Empty) (*pb.Pong, error) {
 	return &pb.Pong{Message: "pong"}, nil
 }
 
+// model server
+type modelDistServer struct {
+	pb.UnimplementedModelDistServer
+	modelcontroller controllers.ModelController
+}
+
+func (s *modelDistServer) GetModel(ctx context.Context, in *pb.ModelRequest) (*pb.ModelReply, error) {
+	hostname := in.GetHostname()
+	log.Infof("Received model fetch request from: %v", hostname)
+	model, err := s.modelcontroller.Fetch(hostname)
+	return &pb.ModelReply{ModelJson: model.Model}, err
+}
+
 func RegisterServices(server *grpc.Server) {
 	auth := &authServer{}
 	pb.RegisterAuthenticationServer(server, auth)
+
+	model := &modelDistServer{}
+	pb.RegisterModelDistServer(server, model)
 }

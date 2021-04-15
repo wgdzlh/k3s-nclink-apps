@@ -14,18 +14,6 @@ import (
 )
 
 func main() {
-	// userservice := service.Userservice{}
-	// user := entity.NewUser("test1", "123456")
-	// err := userservice.Create(user)
-	// if err != nil {
-	// 	log.Println("Error creating mongodb doc: ", err)
-	// }
-	// user.Name = "test2"
-	// ret, err := userservice.Find(user)
-	// if err != nil {
-	// 	log.Fatalln("error geting some doc: ", err)
-	// }
-	// log.Println("test user: ", *ret)
 	host := utils.EnvVar("SERVER_HOST", "localhost")
 	port := utils.GetEnvOrExit("SERVER_PORT")
 	// router := routes.InitRoute()

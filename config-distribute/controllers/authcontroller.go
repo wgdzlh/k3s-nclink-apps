@@ -26,34 +26,3 @@ func (a AuthController) Login(loginInfo *entity.User) (token string, err error) 
 	token, err = a.userservice.GetJwtToken(user)
 	return
 }
-
-// func (a AuthController) Login(c *gin.Context) {
-// 	var loginInfo entity.User
-// 	err := c.ShouldBindJSON(&loginInfo)
-// 	if err != nil {
-// 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-// 		return
-// 	}
-
-// 	user, err := a.userservice.Find(&loginInfo)
-// 	if err != nil {
-// 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "User not found."})
-// 		return
-// 	}
-
-// 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(loginInfo.Password))
-// 	if err != nil {
-// 		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "Password invalid."})
-// 		return
-// 	}
-
-// 	token, err := user.GetJwtToken()
-// 	if err != nil {
-// 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-// 		return
-// 	}
-
-// 	c.JSON(http.StatusOK, gin.H{
-// 		"token": token,
-// 	})
-// }

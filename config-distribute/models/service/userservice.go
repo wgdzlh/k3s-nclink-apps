@@ -42,9 +42,6 @@ func (u UserService) FindByName(name string) (*entity.User, error) {
 	ret := &entity.User{}
 	coll := mgm.Coll(ret)
 	err := coll.First(bson.M{"name": name}, ret)
-	if err != nil {
-		return nil, err
-	}
 	return ret, err
 }
 
