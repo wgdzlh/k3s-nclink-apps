@@ -3,7 +3,9 @@ package service
 import (
 	"context"
 	"k3s-nclink-apps/config-distribute/models/entity"
+	"k3s-nclink-apps/utils"
 
+	"github.com/dgrijalva/jwt-go"
 	"github.com/kamva/mgm/v3"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -11,9 +13,9 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-type Userservice struct{}
+type UserService struct{}
 
-func (u Userservice) Create(user *entity.User) error {
+func (u UserService) Create(user *entity.User) error {
 	hash, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.MinCost)
 	if err != nil {
 		return err
@@ -32,17 +34,27 @@ func (u Userservice) Create(user *entity.User) error {
 }
 
 // Find user
-func (u Userservice) Find(user *entity.User) (*entity.User, error) {
+func (u UserService) Find(user *entity.User) (*entity.User, error) {
+	return u.FindByName(user.Name)
+}
+
+func (u UserService) FindByName(name string) (*entity.User, error) {
 	ret := &entity.User{}
 	coll := mgm.Coll(ret)
-	err := coll.First(bson.M{"name": user.Name}, ret)
+	err := coll.First(bson.M{"name": name}, ret)
 	if err != nil {
 		return nil, err
 	}
 	return ret, err
 }
 
-func (u Userservice) FindByName(name string) (*entity.User, error) {
-	user := entity.NewUser(name, "")
-	return u.Find(user)
+// Get JWT token
+var TokenKey = []byte(utils.EnvVar("TOKEN_KEY", ""))
+
+func (u UserService) GetJwtToken(user *entity.User) (tokenString string, err error) {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"name": user.Name,
+	})
+	tokenString, err = token.SignedString(TokenKey)
+	return
 }

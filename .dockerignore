@@ -1,0 +1,6 @@
+testing
+LICENSE
+Dockerfile
+.gitignore
+*.md
+*.proto
