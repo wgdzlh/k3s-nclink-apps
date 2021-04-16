@@ -15,10 +15,6 @@ service Authentication {
   rpc Ping (google.protobuf.Empty) returns (Pong) {}
 }
 
-service ModelDist {
-  rpc GetModel (ModelRequest) returns (ModelReply) {}
-}
-
 // The request message containing the user's name and password.
 message LoginRequest {
   string name = 1;
@@ -33,13 +29,4 @@ message LoginReply {
 // A test response for authentication.
 message Pong {
   string message = 1;
-}
-
-// Model request and response.
-message ModelRequest {
-  string hostname = 1;
-}
-
-message ModelReply {
-  string modelJson = 1;
 }

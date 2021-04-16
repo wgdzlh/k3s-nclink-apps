@@ -1,0 +1,21 @@
+syntax = "proto3";
+package configmodel;
+
+// option java_multiple_files = true;
+// option java_package = "io.grpc.configmodel";
+// option java_outer_classname = "ConfigModel";
+option go_package = "./configmodel";
+
+
+service ModelDist {
+  rpc GetModel (ModelRequest) returns (ModelReply) {}
+}
+
+// Model request and response.
+message ModelRequest {
+  string hostname = 1;
+}
+
+message ModelReply {
+  string modelJson = 1;
+}

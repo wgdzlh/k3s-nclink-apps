@@ -7,6 +7,7 @@ COPY . .
 RUN CGO_ENABLED=0 go build -o config_dist ./config-distribute/main.go
 RUN CGO_ENABLED=0 go build -o adapter ./adapter-simulator/main.go
 
+
 FROM scratch AS server
 WORKDIR /app
 COPY ./config-distribute/prod.env .env

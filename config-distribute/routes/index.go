@@ -44,9 +44,6 @@ func (s *modelDistServer) GetModel(ctx context.Context, in *pb.ModelRequest) (*p
 }
 
 func RegisterServices(server *grpc.Server) {
-	auth := &authServer{}
-	pb.RegisterAuthenticationServer(server, auth)
-
-	model := &modelDistServer{}
-	pb.RegisterModelDistServer(server, model)
+	pb.RegisterAuthenticationServer(server, &authServer{})
+	pb.RegisterModelDistServer(server, &modelDistServer{})
 }
