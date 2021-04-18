@@ -11,11 +11,12 @@ type DistController struct {
 	modelservice   service.ModelService
 }
 
-func (a DistController) Fetch(hostname string) (model *entity.Model, err error) {
+func (a DistController) Fetch(hostname string) (model *entity.Model, devId string, err error) {
 	adapter, err := a.adapterservice.FindByName(hostname)
 	if err != nil {
 		return
 	}
+	devId = adapter.DevId
 	model, err = a.modelservice.FindByName(adapter.ModelName)
 	return
 }

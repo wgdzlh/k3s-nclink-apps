@@ -40,7 +40,7 @@ type modelDistServer struct {
 func (s *modelDistServer) GetModel(ctx context.Context, in *pb.ModelRequest) (*pb.ModelReply, error) {
 	hostname := in.GetHostname()
 	log.Infof("Received model fetch request from: %v", hostname)
-	model, err := s.modelcontroller.Fetch(hostname)
+	model, devId, err := s.modelcontroller.Fetch(hostname)
 	if err != nil {
 		return nil, err
 	}
@@ -48,7 +48,7 @@ func (s *modelDistServer) GetModel(ctx context.Context, in *pb.ModelRequest) (*p
 	if err != nil {
 		return nil, err
 	}
-	return &pb.ModelReply{Model: outModel}, nil
+	return &pb.ModelReply{Model: outModel, DevId: devId}, nil
 }
 
 func RegisterServices(server *grpc.Server) {

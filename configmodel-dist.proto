@@ -20,4 +20,5 @@ message ModelRequest {
 
 message ModelReply {
   Model model = 1;
+  string dev_id = 2;
 }

@@ -17,15 +17,14 @@ type Model struct {
 	token *oauth2.Token
 	creds credentials.TransportCredentials
 	Def   *pb.Model
+	DevId string
 }
 
 var (
 	configUser = utils.GetEnvOrExit("CONFIG_USER")
 	configPass = utils.GetEnvOrExit("CONFIG_PASS")
-	configHost = utils.GetEnvOrExit("CONFIG_HOST")
-	configPort = utils.GetEnvOrExit("CONFIG_PORT")
+	configAddr = utils.GetEnvOrExit("CONFIG_ADDR")
 	caCert     = utils.GetEnvOrExit("CA_CRT")
-	configAddr = configHost + ":" + configPort
 )
 
 func NewModel() *Model {
@@ -91,4 +90,5 @@ func (m *Model) Fetch(hostname string) {
 		log.Fatalf("GetModel failed: %v", err)
 	}
 	m.Def = resp.Model
+	m.DevId = resp.DevId
 }

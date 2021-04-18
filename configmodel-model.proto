@@ -17,9 +17,9 @@ service ModelServ {
 // Model definition.
 message Model {
   string name = 1;
-  repeated Sample sample = 3;
-  repeated Query query = 4;
-  repeated Config config = 5;
+  repeated Sample sample = 2;
+  repeated Query query = 3;
+  repeated Tweak tweak = 4;
 }
 
 message OpRet {
@@ -35,7 +35,7 @@ message Query {
   string sensor = 1;
 }
 
-message Config {
+message Tweak {
   string register = 1;
   int32 value = 2;
 }
