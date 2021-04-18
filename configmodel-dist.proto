@@ -1,6 +1,8 @@
 syntax = "proto3";
 package configmodel;
 
+import "configmodel-model.proto";
+
 // option java_multiple_files = true;
 // option java_package = "io.grpc.configmodel";
 // option java_outer_classname = "ConfigModel";
@@ -17,5 +19,5 @@ message ModelRequest {
 }
 
 message ModelReply {
-  string modelJson = 1;
+  Model model = 1;
 }

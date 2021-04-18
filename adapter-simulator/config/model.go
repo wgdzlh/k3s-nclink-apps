@@ -16,6 +16,7 @@ import (
 type Model struct {
 	token *oauth2.Token
 	creds credentials.TransportCredentials
+	Def   *pb.Model
 }
 
 var (
@@ -66,7 +67,7 @@ func (m *Model) getToken() *oauth2.Token {
 	return m.token
 }
 
-func (m *Model) Fetch(hostname string) string {
+func (m *Model) Fetch(hostname string) {
 	// Set up the credentials for the connection.
 	perRPC := oauth.NewOauthAccess(m.getToken())
 	opts := []grpc.DialOption{
@@ -89,5 +90,5 @@ func (m *Model) Fetch(hostname string) string {
 	if err != nil {
 		log.Fatalf("GetModel failed: %v", err)
 	}
-	return resp.ModelJson
+	m.Def = resp.Model
 }

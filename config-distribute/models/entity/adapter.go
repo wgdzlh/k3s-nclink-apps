@@ -6,15 +6,15 @@ import (
 	"github.com/kamva/mgm/v3"
 )
 
-type User struct {
+type Adapter struct {
 	mgm.DefaultModel `bson:",inline"`
 	Name             string `json:"name" bson:"name"`
-	Password         string `json:"password" bson:"password"`
+	ModelName        string `json:"model_name" bson:"model_name"`
 }
 
-func NewUser(name, password string) *User {
-	return &User{
-		Name:     name,
-		Password: password,
+func NewAdapter(name, modelName string) *Adapter {
+	return &Adapter{
+		Name:      name,
+		ModelName: modelName,
 	}
 }

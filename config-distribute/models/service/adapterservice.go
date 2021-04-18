@@ -10,11 +10,11 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-type ModelService struct{}
+type AdapterService struct{}
 
-func (m ModelService) Create(model *entity.Model) error {
-	coll := mgm.Coll(model)
-	err := coll.Create(model)
+func (m AdapterService) Create(adapter *entity.Adapter) error {
+	coll := mgm.Coll(adapter)
+	err := coll.Create(adapter)
 	if err != nil {
 		return err
 	}
@@ -25,9 +25,9 @@ func (m ModelService) Create(model *entity.Model) error {
 	return err
 }
 
-// Find model
-func (u ModelService) FindByName(name string) (*entity.Model, error) {
-	ret := &entity.Model{}
+// Find adapter
+func (u AdapterService) FindByName(name string) (*entity.Adapter, error) {
+	ret := &entity.Adapter{}
 	coll := mgm.Coll(ret)
 	err := coll.First(bson.M{"name": name}, ret)
 	return ret, err

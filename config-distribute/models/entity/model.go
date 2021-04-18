@@ -8,13 +8,13 @@ import (
 
 type Model struct {
 	mgm.DefaultModel `bson:",inline"`
-	Hostname         string `json:"hostname" bson:"hostname"`
-	Model            string `json:"model" bson:"model"`
+	Name             string `json:"name" bson:"name"`
+	Def              string `json:"def" bson:"def"`
 }
 
-func NewModel(hostname string, model string) *Model {
+func NewModel(name, def string) *Model {
 	return &Model{
-		Hostname: hostname,
-		Model:    model,
+		Name: name,
+		Def:  def,
 	}
 }

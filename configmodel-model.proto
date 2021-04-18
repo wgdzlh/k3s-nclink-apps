@@ -1,0 +1,45 @@
+syntax = "proto3";
+package configmodel;
+
+// option java_multiple_files = true;
+// option java_package = "io.grpc.configmodel";
+// option java_outer_classname = "ConfigModel";
+option go_package = "./configmodel";
+
+
+service ModelServ {
+  rpc SaveModel (Model) returns (OpRet) {}
+  rpc DeleteModel (Model) returns (OpRet) {}
+  rpc UpdateModel (Model) returns (OpRet) {}
+  rpc FindModels (Filter) returns (stream Model) {}
+}
+
+// Model definition.
+message Model {
+  string name = 1;
+  repeated Sample sample = 3;
+  repeated Query query = 4;
+  repeated Config config = 5;
+}
+
+message OpRet {
+  string msg = 1;
+}
+
+message Sample {
+  string sensor = 1;
+  uint32 rate = 2;
+}
+
+message Query {
+  string sensor = 1;
+}
+
+message Config {
+  string register = 1;
+  int32 value = 2;
+}
+
+message Filter {
+  string filter = 1;
+}
