@@ -14,5 +14,6 @@ func main() {
 	log.Printf("model: %v\n", model.Def)
 	// model.Fetch("k8s-node-12")
 	// log.Printf("model: %v\n", model.Def)
-	mqtt.Run(model)
+	mqtt.Run(model, true)
+	select {}
 }

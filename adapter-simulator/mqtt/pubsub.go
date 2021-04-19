@@ -7,31 +7,41 @@ import (
 	"k3s-nclink-apps/utils"
 	"log"
 	"math/rand"
+	"strconv"
+	"strings"
 	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
 
 const (
-	samplePubFormat = "nclink/sample/%s/%s"
-	sampleMsgFormat = "{\"value\": %v}"
-	querySubFormat  = "nclink/query/request/%s/%s"
-	queryPubFormat  = "nclink/query/response/%s/%s"
-	tweakSubFormat  = "nclink/tweak/request/%s/%s"
-	tweakPubFormat  = "nclink/tweak/response/%s/%s"
+	samplePubFormat     = "nclink/sample/%s/%s"
+	sampleMsgFormat     = "{\"sample_value\": %v}"
+	querySubFormat      = "nclink/query/request/%s/%s"
+	queryPubFormat      = "nclink/query/response/%s/%s"
+	queryMsgFormat      = "{\"query_value\": %v}"
+	tweakSubFormat      = "nclink/tweak/request/%s/%s"
+	tweakPubFormat      = "nclink/tweak/response/%s/%s"
+	tweakMsgFormat      = "{\"tweaked_to\": %v}"
+	resetModelSubFormat = "nclink/model/redist/%s"
 )
 
 var (
-	options    *mqtt.ClientOptions
-	devId      string
-	samples    []*pb.Sample
-	samplePubs []string
-	querySubs  []string
-	tweakSubs  []string
+	model         *config.Model
+	client        mqtt.Client
+	hostname      string
+	devId         string
+	samples       []*pb.Sample
+	samplePubs    []string
+	querySubs     []string
+	tweakSubs     []string
+	resetModelSub string
+	endSample     chan bool
 )
 
-func messagePubHandler(client mqtt.Client, msg mqtt.Message) {
-	log.Printf("Message %s received on topic %s\n", msg.Payload(), msg.Topic())
+func messageDefaultHandler(client mqtt.Client, msg mqtt.Message) {
+	log.Printf("Default handler: message '%s' received on topic %s\n",
+		msg.Payload(), msg.Topic())
 }
 
 func connectHandler(client mqtt.Client) {
@@ -40,6 +50,47 @@ func connectHandler(client mqtt.Client) {
 
 func connectionLostHandler(client mqtt.Client, err error) {
 	log.Printf("Connection Lost: %v\n", err)
+}
+
+func onQueryMessage(client mqtt.Client, msg mqtt.Message) {
+	sensor := strings.SplitN(msg.Topic(), "/", 5)[4]
+	topic := fmt.Sprintf(queryPubFormat, devId, sensor)
+	value := rand.Intn(100)
+	text := fmt.Sprintf(queryMsgFormat, value)
+	token := client.Publish(topic, 0, false, text)
+	log.Printf("Query %s: %v\n", sensor, value)
+	token.Wait()
+}
+
+func onResetModel(client mqtt.Client, msg mqtt.Message) {
+	endSample <- true
+	model.Fetch(hostname)
+	log.Printf("Reseted model: %v\n", model.Def)
+	Run(nil, false)
+}
+
+func onTweakMessage(client mqtt.Client, msg mqtt.Message) {
+	reg := strings.SplitN(msg.Topic(), "/", 5)[4]
+	in := string(msg.Payload())
+	value, err := strconv.ParseInt(in, 10, 64)
+	if err != nil {
+		valuef, err := strconv.ParseFloat(in, 64)
+		if err != nil {
+			log.Printf("failed tweaking register '%s' to '%s'\n", reg, in)
+			return
+		}
+		tweakRegister(client, reg, valuef)
+	} else {
+		tweakRegister(client, reg, value)
+	}
+}
+
+func tweakRegister(client mqtt.Client, reg string, value interface{}) {
+	topic := fmt.Sprintf(tweakPubFormat, devId, reg)
+	text := fmt.Sprintf(tweakMsgFormat, value)
+	token := client.Publish(topic, 0, false, text)
+	log.Printf("Tweak '%s': %v\n", reg, value)
+	token.Wait()
 }
 
 func processSamplePubs() {
@@ -63,22 +114,7 @@ func processTweakSubs(tweaks []*pb.Tweak) {
 	}
 }
 
-func setup(model *config.Model) {
-	rand.Seed(time.Now().UnixNano())
-	broker := utils.GetEnvOrExit("MQTT_ADDR")
-	user := utils.GetEnvOrExit("MQTT_USER")
-	pass := utils.GetEnvOrExit("MQTT_PASS")
-	clientId := utils.EnvVar("MQTT_CLIENT", "go_mqtt_example")
-
-	options = mqtt.NewClientOptions()
-	options.AddBroker(broker)
-	options.SetClientID(clientId)
-	options.SetUsername(user)
-	options.SetPassword(pass)
-	options.SetDefaultPublishHandler(messagePubHandler)
-	options.OnConnect = connectHandler
-	options.OnConnectionLost = connectionLostHandler
-
+func setModel(model *config.Model) {
 	devId = model.DevId
 	modelDef := model.Def
 	samples = modelDef.Sample
@@ -87,22 +123,51 @@ func setup(model *config.Model) {
 	processTweakSubs(modelDef.Tweak)
 }
 
-func Run(model *config.Model) {
-	setup(model)
-	client := mqtt.NewClient(options)
-	token := client.Connect()
-	if token.Wait() && token.Error() != nil {
-		panic(token.Error())
+func setup() *mqtt.ClientOptions {
+	rand.Seed(time.Now().UnixNano())
+	hostname = utils.GetEnvOrExit("HOSTNAME")
+	broker := utils.GetEnvOrExit("MQTT_ADDR")
+	user := utils.GetEnvOrExit("MQTT_USER")
+	pass := utils.GetEnvOrExit("MQTT_PASS")
+	clientId := utils.EnvVar("MQTT_CLIENT", "go_mqtt_example")
+	resetModelSub = fmt.Sprintf(resetModelSubFormat, hostname)
+	endSample = make(chan bool)
+
+	options := mqtt.NewClientOptions()
+	options.AddBroker(broker)
+	options.SetClientID(clientId)
+	options.SetUsername(user)
+	options.SetPassword(pass)
+	options.SetDefaultPublishHandler(messageDefaultHandler)
+	options.OnConnect = connectHandler
+	options.OnConnectionLost = connectionLostHandler
+	return options
+}
+
+func Run(inModel *config.Model, init bool) {
+	var token mqtt.Token
+	if init {
+		model = inModel
+		client = mqtt.NewClient(setup())
+		token = client.Connect()
+		if token.Wait() && token.Error() != nil {
+			panic(token.Error())
+		}
+		client.Subscribe(resetModelSub, 1, onResetModel).Wait()
+	} else {
+		client.Unsubscribe(querySubs...).Wait()
+		client.Unsubscribe(tweakSubs...).Wait()
 	}
+	setModel(model)
 
 	for _, topic := range querySubs {
-		token = client.Subscribe(topic, 1, nil)
+		token = client.Subscribe(topic, 1, onQueryMessage)
 		token.Wait()
 		log.Printf("Subscribed to query topic %s\n", topic)
 	}
 
 	for _, topic := range tweakSubs {
-		token = client.Subscribe(topic, 1, nil)
+		token = client.Subscribe(topic, 1, onTweakMessage)
 		token.Wait()
 		log.Printf("Subscribed to tweak topic %s\n", topic)
 	}
@@ -111,19 +176,20 @@ func Run(model *config.Model) {
 		sensor := samples[i].Sensor
 		interval := time.Duration(1000 / samples[i].Rate)
 		ticker := time.NewTicker(interval * time.Millisecond)
-		go func(topic, sensor string) {
+		go func(topic string) {
 			for {
-				<-ticker.C
-				value := rand.Intn(100)
-				text := fmt.Sprintf(sampleMsgFormat, value)
-				token = client.Publish(topic, 0, false, text)
-				log.Printf("Sample %s: %v", sensor, value)
-				token.Wait()
+				select {
+				case <-endSample:
+					ticker.Stop()
+					return
+				case <-ticker.C:
+					value := rand.Intn(100)
+					text := fmt.Sprintf(sampleMsgFormat, value)
+					token = client.Publish(topic, 0, false, text)
+					log.Printf("Sample %s: %v\n", sensor, value)
+					token.Wait()
+				}
 			}
-		}(topic, sensor)
+		}(topic)
 	}
-
-	time.Sleep(24 * 36500 * time.Hour)
-	client.Disconnect(100)
-	log.Println("Disonnected")
 }
