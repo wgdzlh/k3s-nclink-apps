@@ -1,7 +1,7 @@
 package entity
 
 import (
-	_ "k3s-nclink-apps/config-distribute/models/db"
+	_ "k3s-nclink-apps/data-source/db"
 
 	"github.com/kamva/mgm/v3"
 )

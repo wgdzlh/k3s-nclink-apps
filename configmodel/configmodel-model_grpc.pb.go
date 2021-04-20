@@ -14,57 +14,57 @@ import (
 // Requires gRPC-Go v1.32.0 or later.
 const _ = grpc.SupportPackageIsVersion7
 
-// ModelServClient is the client API for ModelServ service.
+// ModelManageClient is the client API for ModelManage service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type ModelServClient interface {
+type ModelManageClient interface {
 	SaveModel(ctx context.Context, in *Model, opts ...grpc.CallOption) (*OpRet, error)
 	DeleteModel(ctx context.Context, in *Model, opts ...grpc.CallOption) (*OpRet, error)
 	UpdateModel(ctx context.Context, in *Model, opts ...grpc.CallOption) (*OpRet, error)
-	FindModels(ctx context.Context, in *Filter, opts ...grpc.CallOption) (ModelServ_FindModelsClient, error)
+	FindModels(ctx context.Context, in *Filter, opts ...grpc.CallOption) (ModelManage_FindModelsClient, error)
 }
 
-type modelServClient struct {
+type modelManageClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewModelServClient(cc grpc.ClientConnInterface) ModelServClient {
-	return &modelServClient{cc}
+func NewModelManageClient(cc grpc.ClientConnInterface) ModelManageClient {
+	return &modelManageClient{cc}
 }
 
-func (c *modelServClient) SaveModel(ctx context.Context, in *Model, opts ...grpc.CallOption) (*OpRet, error) {
+func (c *modelManageClient) SaveModel(ctx context.Context, in *Model, opts ...grpc.CallOption) (*OpRet, error) {
 	out := new(OpRet)
-	err := c.cc.Invoke(ctx, "/configmodel.ModelServ/SaveModel", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/configmodel.ModelManage/SaveModel", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *modelServClient) DeleteModel(ctx context.Context, in *Model, opts ...grpc.CallOption) (*OpRet, error) {
+func (c *modelManageClient) DeleteModel(ctx context.Context, in *Model, opts ...grpc.CallOption) (*OpRet, error) {
 	out := new(OpRet)
-	err := c.cc.Invoke(ctx, "/configmodel.ModelServ/DeleteModel", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/configmodel.ModelManage/DeleteModel", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *modelServClient) UpdateModel(ctx context.Context, in *Model, opts ...grpc.CallOption) (*OpRet, error) {
+func (c *modelManageClient) UpdateModel(ctx context.Context, in *Model, opts ...grpc.CallOption) (*OpRet, error) {
 	out := new(OpRet)
-	err := c.cc.Invoke(ctx, "/configmodel.ModelServ/UpdateModel", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/configmodel.ModelManage/UpdateModel", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *modelServClient) FindModels(ctx context.Context, in *Filter, opts ...grpc.CallOption) (ModelServ_FindModelsClient, error) {
-	stream, err := c.cc.NewStream(ctx, &ModelServ_ServiceDesc.Streams[0], "/configmodel.ModelServ/FindModels", opts...)
+func (c *modelManageClient) FindModels(ctx context.Context, in *Filter, opts ...grpc.CallOption) (ModelManage_FindModelsClient, error) {
+	stream, err := c.cc.NewStream(ctx, &ModelManage_ServiceDesc.Streams[0], "/configmodel.ModelManage/FindModels", opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &modelServFindModelsClient{stream}
+	x := &modelManageFindModelsClient{stream}
 	if err := x.ClientStream.SendMsg(in); err != nil {
 		return nil, err
 	}
@@ -74,16 +74,16 @@ func (c *modelServClient) FindModels(ctx context.Context, in *Filter, opts ...gr
 	return x, nil
 }
 
-type ModelServ_FindModelsClient interface {
+type ModelManage_FindModelsClient interface {
 	Recv() (*Model, error)
 	grpc.ClientStream
 }
 
-type modelServFindModelsClient struct {
+type modelManageFindModelsClient struct {
 	grpc.ClientStream
 }
 
-func (x *modelServFindModelsClient) Recv() (*Model, error) {
+func (x *modelManageFindModelsClient) Recv() (*Model, error) {
 	m := new(Model)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
@@ -91,145 +91,145 @@ func (x *modelServFindModelsClient) Recv() (*Model, error) {
 	return m, nil
 }
 
-// ModelServServer is the server API for ModelServ service.
-// All implementations must embed UnimplementedModelServServer
+// ModelManageServer is the server API for ModelManage service.
+// All implementations must embed UnimplementedModelManageServer
 // for forward compatibility
-type ModelServServer interface {
+type ModelManageServer interface {
 	SaveModel(context.Context, *Model) (*OpRet, error)
 	DeleteModel(context.Context, *Model) (*OpRet, error)
 	UpdateModel(context.Context, *Model) (*OpRet, error)
-	FindModels(*Filter, ModelServ_FindModelsServer) error
-	mustEmbedUnimplementedModelServServer()
+	FindModels(*Filter, ModelManage_FindModelsServer) error
+	mustEmbedUnimplementedModelManageServer()
 }
 
-// UnimplementedModelServServer must be embedded to have forward compatible implementations.
-type UnimplementedModelServServer struct {
+// UnimplementedModelManageServer must be embedded to have forward compatible implementations.
+type UnimplementedModelManageServer struct {
 }
 
-func (UnimplementedModelServServer) SaveModel(context.Context, *Model) (*OpRet, error) {
+func (UnimplementedModelManageServer) SaveModel(context.Context, *Model) (*OpRet, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SaveModel not implemented")
 }
-func (UnimplementedModelServServer) DeleteModel(context.Context, *Model) (*OpRet, error) {
+func (UnimplementedModelManageServer) DeleteModel(context.Context, *Model) (*OpRet, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteModel not implemented")
 }
-func (UnimplementedModelServServer) UpdateModel(context.Context, *Model) (*OpRet, error) {
+func (UnimplementedModelManageServer) UpdateModel(context.Context, *Model) (*OpRet, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateModel not implemented")
 }
-func (UnimplementedModelServServer) FindModels(*Filter, ModelServ_FindModelsServer) error {
+func (UnimplementedModelManageServer) FindModels(*Filter, ModelManage_FindModelsServer) error {
 	return status.Errorf(codes.Unimplemented, "method FindModels not implemented")
 }
-func (UnimplementedModelServServer) mustEmbedUnimplementedModelServServer() {}
+func (UnimplementedModelManageServer) mustEmbedUnimplementedModelManageServer() {}
 
-// UnsafeModelServServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to ModelServServer will
+// UnsafeModelManageServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to ModelManageServer will
 // result in compilation errors.
-type UnsafeModelServServer interface {
-	mustEmbedUnimplementedModelServServer()
+type UnsafeModelManageServer interface {
+	mustEmbedUnimplementedModelManageServer()
 }
 
-func RegisterModelServServer(s grpc.ServiceRegistrar, srv ModelServServer) {
-	s.RegisterService(&ModelServ_ServiceDesc, srv)
+func RegisterModelManageServer(s grpc.ServiceRegistrar, srv ModelManageServer) {
+	s.RegisterService(&ModelManage_ServiceDesc, srv)
 }
 
-func _ModelServ_SaveModel_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _ModelManage_SaveModel_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(Model)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ModelServServer).SaveModel(ctx, in)
+		return srv.(ModelManageServer).SaveModel(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/configmodel.ModelServ/SaveModel",
+		FullMethod: "/configmodel.ModelManage/SaveModel",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ModelServServer).SaveModel(ctx, req.(*Model))
+		return srv.(ModelManageServer).SaveModel(ctx, req.(*Model))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ModelServ_DeleteModel_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _ModelManage_DeleteModel_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(Model)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ModelServServer).DeleteModel(ctx, in)
+		return srv.(ModelManageServer).DeleteModel(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/configmodel.ModelServ/DeleteModel",
+		FullMethod: "/configmodel.ModelManage/DeleteModel",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ModelServServer).DeleteModel(ctx, req.(*Model))
+		return srv.(ModelManageServer).DeleteModel(ctx, req.(*Model))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ModelServ_UpdateModel_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _ModelManage_UpdateModel_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(Model)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ModelServServer).UpdateModel(ctx, in)
+		return srv.(ModelManageServer).UpdateModel(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/configmodel.ModelServ/UpdateModel",
+		FullMethod: "/configmodel.ModelManage/UpdateModel",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ModelServServer).UpdateModel(ctx, req.(*Model))
+		return srv.(ModelManageServer).UpdateModel(ctx, req.(*Model))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ModelServ_FindModels_Handler(srv interface{}, stream grpc.ServerStream) error {
+func _ModelManage_FindModels_Handler(srv interface{}, stream grpc.ServerStream) error {
 	m := new(Filter)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
-	return srv.(ModelServServer).FindModels(m, &modelServFindModelsServer{stream})
+	return srv.(ModelManageServer).FindModels(m, &modelManageFindModelsServer{stream})
 }
 
-type ModelServ_FindModelsServer interface {
+type ModelManage_FindModelsServer interface {
 	Send(*Model) error
 	grpc.ServerStream
 }
 
-type modelServFindModelsServer struct {
+type modelManageFindModelsServer struct {
 	grpc.ServerStream
 }
 
-func (x *modelServFindModelsServer) Send(m *Model) error {
+func (x *modelManageFindModelsServer) Send(m *Model) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-// ModelServ_ServiceDesc is the grpc.ServiceDesc for ModelServ service.
+// ModelManage_ServiceDesc is the grpc.ServiceDesc for ModelManage service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var ModelServ_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "configmodel.ModelServ",
-	HandlerType: (*ModelServServer)(nil),
+var ModelManage_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "configmodel.ModelManage",
+	HandlerType: (*ModelManageServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
 			MethodName: "SaveModel",
-			Handler:    _ModelServ_SaveModel_Handler,
+			Handler:    _ModelManage_SaveModel_Handler,
 		},
 		{
 			MethodName: "DeleteModel",
-			Handler:    _ModelServ_DeleteModel_Handler,
+			Handler:    _ModelManage_DeleteModel_Handler,
 		},
 		{
 			MethodName: "UpdateModel",
-			Handler:    _ModelServ_UpdateModel_Handler,
+			Handler:    _ModelManage_UpdateModel_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
 		{
 			StreamName:    "FindModels",
-			Handler:       _ModelServ_FindModels_Handler,
+			Handler:       _ModelManage_FindModels_Handler,
 			ServerStreams: true,
 		},
 	},

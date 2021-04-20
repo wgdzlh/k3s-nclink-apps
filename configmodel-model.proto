@@ -7,7 +7,7 @@ package configmodel;
 option go_package = "./configmodel";
 
 
-service ModelServ {
+service ModelManage {
   rpc SaveModel (Model) returns (OpRet) {}
   rpc DeleteModel (Model) returns (OpRet) {}
   rpc UpdateModel (Model) returns (OpRet) {}

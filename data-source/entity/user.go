@@ -1,7 +1,7 @@
 package entity
 
 import (
-	_ "k3s-nclink-apps/config-distribute/models/db"
+	_ "k3s-nclink-apps/data-source/db"
 
 	"github.com/kamva/mgm/v3"
 )
@@ -9,12 +9,14 @@ import (
 type User struct {
 	mgm.DefaultModel `bson:",inline"`
 	Name             string `json:"name" bson:"name"`
+	Access           string `json:"access" bson:"access"`
 	Password         string `json:"password" bson:"password"`
 }
 
-func NewUser(name, password string) *User {
+func NewUser(name, access, password string) *User {
 	return &User{
 		Name:     name,
+		Access:   access,
 		Password: password,
 	}
 }

@@ -2,7 +2,7 @@ package middlewares
 
 import (
 	"context"
-	"k3s-nclink-apps/config-distribute/models/service"
+	"k3s-nclink-apps/data-source/service"
 	"strings"
 	"time"
 
@@ -75,8 +75,8 @@ func validateToken(tokenString string) bool {
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 		name := claims["name"].(string)
-		if _, err = userservice.FindByName(name); err == nil {
-			return true
+		if user, err := userservice.FindByName(name); err == nil {
+			return user.Access == "ro"
 		}
 	}
 	return false

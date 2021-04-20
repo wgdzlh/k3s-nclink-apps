@@ -3,8 +3,8 @@ package routes
 import (
 	"context"
 	"k3s-nclink-apps/config-distribute/controllers"
-	"k3s-nclink-apps/config-distribute/models/entity"
 	pb "k3s-nclink-apps/configmodel"
+	"k3s-nclink-apps/data-source/entity"
 	"k3s-nclink-apps/utils/conv"
 
 	"google.golang.org/grpc"
@@ -24,7 +24,10 @@ func (s *authServer) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginR
 	log.Infof("Received login request from: %v", name)
 	loginInfo := &entity.User{Name: name, Password: pass}
 	token, err := s.authController.Login(loginInfo)
-	return &pb.LoginReply{Token: token}, err
+	if err != nil {
+		return nil, err
+	}
+	return &pb.LoginReply{Token: token}, nil
 }
 
 func (s *authServer) Ping(context.Context, *emptypb.Empty) (*pb.Pong, error) {
@@ -54,4 +57,5 @@ func (s *modelDistServer) GetModel(ctx context.Context, in *pb.ModelRequest) (*p
 func RegisterServices(server *grpc.Server) {
 	pb.RegisterAuthenticationServer(server, &authServer{})
 	pb.RegisterModelDistServer(server, &modelDistServer{})
+	pb.RegisterModelManageServer(server, &modelManageServer{})
 }

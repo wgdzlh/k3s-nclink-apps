@@ -1,8 +1,8 @@
 package controllers
 
 import (
-	"k3s-nclink-apps/config-distribute/models/entity"
-	"k3s-nclink-apps/config-distribute/models/service"
+	"k3s-nclink-apps/data-source/entity"
+	"k3s-nclink-apps/data-source/service"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -12,9 +12,20 @@ type AuthController struct {
 	userservice service.UserService
 }
 
+type WrongAccessError struct{}
+
+func (e WrongAccessError) Error() string {
+	return "wrong user access"
+}
+
 func (a AuthController) Login(loginInfo *entity.User) (token string, err error) {
 	user, err := a.userservice.Find(loginInfo)
 	if err != nil {
+		return
+	}
+
+	if user.Access != "ro" {
+		err = WrongAccessError{}
 		return
 	}
 

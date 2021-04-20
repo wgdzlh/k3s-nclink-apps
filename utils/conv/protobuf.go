@@ -1,8 +1,8 @@
 package conv
 
 import (
-	"k3s-nclink-apps/config-distribute/models/entity"
 	pb "k3s-nclink-apps/configmodel"
+	"k3s-nclink-apps/data-source/entity"
 
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"

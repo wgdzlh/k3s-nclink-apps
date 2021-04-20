@@ -23,7 +23,9 @@ const (
 	tweakSubFormat      = "nclink/tweak/request/%s/%s"
 	tweakPubFormat      = "nclink/tweak/response/%s/%s"
 	tweakMsgFormat      = "{\"tweaked_to\": %v}"
-	resetModelSubFormat = "nclink/model/redist/%s"
+	resetModelSubFormat = "nclink/resetmodel/request/%s"
+	resetModelPubFormat = "nclink/resetmodel/response/%s"
+	retMsgFormat        = "{\"ret_msg\": \"%s\"}"
 )
 
 var (
@@ -67,6 +69,11 @@ func onResetModel(client mqtt.Client, msg mqtt.Message) {
 	model.Fetch(hostname)
 	log.Printf("Reseted model: %v\n", model.Def)
 	Run(nil, false)
+	topic := fmt.Sprintf(resetModelPubFormat, hostname)
+	text := fmt.Sprintf(retMsgFormat, "reset model completed")
+	token := client.Publish(topic, 0, false, text)
+	log.Printf("Model reseted on host '%s'\n", hostname)
+	token.Wait()
 }
 
 func onTweakMessage(client mqtt.Client, msg mqtt.Message) {

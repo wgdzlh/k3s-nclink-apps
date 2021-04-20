@@ -16,11 +16,12 @@ func init() {
 	mongoUser := utils.GetEnvOrExit("MONGO_USER")
 	mongoPass := utils.GetEnvOrExit("MONGO_PASS")
 	mongoHost := utils.GetEnvOrExit("MONGO_ADDR")
+	mongoDB := utils.GetEnvOrExit("MONGO_DB")
 	mongoURL := fmt.Sprintf("mongodb://%s:%s@%s", mongoUser, mongoPass, mongoHost)
 
 	opts := options.Client().ApplyURI(mongoURL)
 
-	err := mgm.SetDefaultConfig(nil, "test", opts)
+	err := mgm.SetDefaultConfig(nil, mongoDB, opts)
 	if err != nil {
 		log.Fatalf("Mongodb set config fail: %v", err)
 	}

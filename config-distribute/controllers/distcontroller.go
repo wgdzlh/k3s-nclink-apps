@@ -1,8 +1,8 @@
 package controllers
 
 import (
-	"k3s-nclink-apps/config-distribute/models/entity"
-	"k3s-nclink-apps/config-distribute/models/service"
+	"k3s-nclink-apps/data-source/entity"
+	"k3s-nclink-apps/data-source/service"
 )
 
 // DistController is for model distribution logic

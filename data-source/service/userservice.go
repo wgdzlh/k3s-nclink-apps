@@ -2,7 +2,7 @@ package service
 
 import (
 	"context"
-	"k3s-nclink-apps/config-distribute/models/entity"
+	"k3s-nclink-apps/data-source/entity"
 	"k3s-nclink-apps/utils"
 
 	"github.com/dgrijalva/jwt-go"
@@ -26,10 +26,14 @@ func (u UserService) Create(user *entity.User) error {
 	if err != nil {
 		return err
 	}
-	_, err = coll.Indexes().CreateOne(context.Background(), mongo.IndexModel{
-		Keys:    bson.D{{Key: "name", Value: 1}},
-		Options: options.Index().SetUnique(true),
-	})
+	ctx := context.Background()
+	num, err := coll.EstimatedDocumentCount(ctx)
+	if num <= 1 {
+		_, err = coll.Indexes().CreateOne(ctx, mongo.IndexModel{
+			Keys:    bson.D{{Key: "name", Value: 1}},
+			Options: options.Index().SetUnique(true),
+		})
+	}
 	return err
 }
 
