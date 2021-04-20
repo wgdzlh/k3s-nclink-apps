@@ -9,20 +9,18 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-var userservice = service.UserService{}
-
 // auth middleware
 func AuthErrorHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.Request.Header.Get("Authorization")
-		if len(authHeader) == 0 {
+		if authHeader == "" {
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 				"error": "Authorization header is missing.",
 			})
 			return
 		}
 
-		temp := strings.Split(authHeader, "Bearer")
+		temp := strings.SplitN(authHeader, "Bearer", 2)
 		if len(temp) < 2 {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Wrong token."})
 			return
@@ -30,7 +28,7 @@ func AuthErrorHandler() gin.HandlerFunc {
 
 		tokenString := strings.TrimSpace(temp[1])
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-			return service.TokenKey, nil
+			return service.UserServ.TokenKey, nil
 		})
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
@@ -39,12 +37,12 @@ func AuthErrorHandler() gin.HandlerFunc {
 
 		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 			name := claims["name"].(string)
-			user, err := userservice.FindByName(name)
+			user, err := service.UserServ.FindByName(name)
 			if err != nil {
 				c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "User not found."})
 				return
 			}
-			if user.Access != "rw" {
+			if user.Access != service.UserServ.AccessType {
 				c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "User access limited."})
 				return
 			}
@@ -55,10 +53,3 @@ func AuthErrorHandler() gin.HandlerFunc {
 		}
 	}
 }
-
-// func GlobalErrorHandler(c *gin.Context) {
-// 	c.Next()
-// 	if len(c.Errors) > 0 {
-// 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": c.Errors})
-// 	}
-// }

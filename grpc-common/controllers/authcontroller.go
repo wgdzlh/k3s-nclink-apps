@@ -7,9 +7,7 @@ import (
 )
 
 // AuthController is for auth logic
-type AuthController struct {
-	userservice service.UserService
-}
+type AuthController struct{}
 
 type WrongAccessError struct{}
 
@@ -18,12 +16,12 @@ func (e WrongAccessError) Error() string {
 }
 
 func (a AuthController) Login(name, pass string) (token string, err error) {
-	user, err := a.userservice.FindByName(name)
+	user, err := service.UserServ.FindByName(name)
 	if err != nil {
 		return
 	}
 
-	if user.Access != service.UserAccessType {
+	if user.Access != service.UserServ.AccessType {
 		err = WrongAccessError{}
 		return
 	}
@@ -33,6 +31,6 @@ func (a AuthController) Login(name, pass string) (token string, err error) {
 		return
 	}
 
-	token, err = a.userservice.GetJwtToken(user)
+	token, err = service.UserServ.GetJwtToken(user)
 	return
 }

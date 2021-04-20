@@ -16,7 +16,6 @@ import (
 
 // auth middleware
 var (
-	userservice        = service.UserService{}
 	errMissingMetadata = status.Error(codes.InvalidArgument, "missing metadata")
 	errMissingToken    = status.Error(codes.InvalidArgument, "missing token")
 	errInvalidToken    = status.Error(codes.Unauthenticated, "invalid token")
@@ -67,7 +66,7 @@ func validateToken(tokenString string) bool {
 	// log.Infoln(tokenKey)
 
 	token, err := jwt.Parse(tokenString, func(*jwt.Token) (interface{}, error) {
-		return service.TokenKey, nil
+		return service.UserServ.TokenKey, nil
 	})
 	if err != nil {
 		return false
@@ -75,8 +74,8 @@ func validateToken(tokenString string) bool {
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 		name := claims["name"].(string)
-		if user, err := userservice.FindByName(name); err == nil {
-			return user.Access == "ro"
+		if user, err := service.UserServ.FindByName(name); err == nil {
+			return user.Access == service.UserServ.AccessType
 		}
 	}
 	return false

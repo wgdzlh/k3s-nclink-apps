@@ -10,9 +10,7 @@ import (
 )
 
 // AuthController is for auth logic
-type AuthController struct {
-	userservice service.UserService
-}
+type AuthController struct{}
 
 func (a AuthController) Login(c *gin.Context) {
 	var loginInfo entity.User
@@ -22,13 +20,13 @@ func (a AuthController) Login(c *gin.Context) {
 		return
 	}
 
-	user, err := a.userservice.FindByName(loginInfo.Name)
+	user, err := service.UserServ.FindByName(loginInfo.Name)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "User not found."})
 		return
 	}
 
-	if user.Access != service.UserAccessType {
+	if user.Access != service.UserServ.AccessType {
 		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "User access limited."})
 		return
 	}
@@ -39,7 +37,7 @@ func (a AuthController) Login(c *gin.Context) {
 		return
 	}
 
-	token, err := a.userservice.GetJwtToken(user)
+	token, err := service.UserServ.GetJwtToken(user)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

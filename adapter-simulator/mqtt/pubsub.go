@@ -68,7 +68,7 @@ func onResetModel(client mqtt.Client, msg mqtt.Message) {
 	endSample <- true
 	model.Fetch(hostname)
 	log.Printf("Reseted model: %v\n", model.Def)
-	Run(nil, false)
+	Run(nil)
 	topic := fmt.Sprintf(resetModelPubFormat, hostname)
 	text := fmt.Sprintf(retMsgFormat, "reset model completed")
 	token := client.Publish(topic, 0, false, text)
@@ -136,7 +136,7 @@ func setup() *mqtt.ClientOptions {
 	broker := utils.GetEnvOrExit("MQTT_ADDR")
 	user := utils.GetEnvOrExit("MQTT_USER")
 	pass := utils.GetEnvOrExit("MQTT_PASS")
-	clientId := utils.EnvVar("MQTT_CLIENT", "go_mqtt_example")
+	clientId := utils.EnvVar("MQTT_CLIENT", "go_mqtt_"+hostname)
 	resetModelSub = fmt.Sprintf(resetModelSubFormat, hostname)
 	endSample = make(chan bool)
 
@@ -151,9 +151,9 @@ func setup() *mqtt.ClientOptions {
 	return options
 }
 
-func Run(inModel *config.Model, init bool) {
+func Run(inModel *config.Model) {
 	var token mqtt.Token
-	if init {
+	if model == nil {
 		model = inModel
 		client = mqtt.NewClient(setup())
 		token = client.Connect()
@@ -162,8 +162,13 @@ func Run(inModel *config.Model, init bool) {
 		}
 		client.Subscribe(resetModelSub, 1, onResetModel).Wait()
 	} else {
-		client.Unsubscribe(querySubs...).Wait()
-		client.Unsubscribe(tweakSubs...).Wait()
+		log.Println("restart mqtt subpub.")
+		if len(querySubs) > 0 {
+			client.Unsubscribe(querySubs...).Wait()
+		}
+		if len(tweakSubs) > 0 {
+			client.Unsubscribe(tweakSubs...).Wait()
+		}
 	}
 	setModel(model)
 

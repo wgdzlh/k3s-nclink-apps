@@ -13,28 +13,32 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-type UserService struct{}
+type userService struct {
+	TokenKey   []byte
+	AccessType string
+	coll       *mgm.Collection
+}
 
-var (
-	TokenKey       = []byte(utils.EnvVar("TOKEN_KEY", "")) // JWT token key
-	UserAccessType = utils.EnvVar("USER_ACCESS_TYPE", "ro")
-)
+var UserServ = &userService{
+	TokenKey:   []byte(utils.EnvVar("TOKEN_KEY", "")), // JWT token key
+	AccessType: utils.EnvVar("USER_ACCESS_TYPE", "ro"),
+	coll:       mgm.Coll(&entity.User{}),
+}
 
-func (u UserService) Create(user *entity.User) error {
+func (u *userService) Create(user *entity.User) error {
 	hash, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.MinCost)
 	if err != nil {
 		return err
 	}
 	user.Password = string(hash)
-	coll := mgm.Coll(user)
-	err = coll.Create(user)
+	err = u.coll.Create(user)
 	if err != nil {
 		return err
 	}
 	ctx := context.Background()
-	num, err := coll.EstimatedDocumentCount(ctx)
+	num, err := u.coll.EstimatedDocumentCount(ctx)
 	if num <= 1 {
-		_, err = coll.Indexes().CreateOne(ctx, mongo.IndexModel{
+		_, err = u.coll.Indexes().CreateOne(ctx, mongo.IndexModel{
 			Keys:    bson.D{{Key: "name", Value: 1}},
 			Options: options.Index().SetUnique(true),
 		})
@@ -43,17 +47,16 @@ func (u UserService) Create(user *entity.User) error {
 }
 
 // Find user
-func (u UserService) FindByName(name string) (*entity.User, error) {
+func (u *userService) FindByName(name string) (*entity.User, error) {
 	ret := &entity.User{}
-	coll := mgm.Coll(ret)
-	err := coll.First(bson.M{"name": name}, ret)
+	err := u.coll.First(bson.M{"name": name}, ret)
 	return ret, err
 }
 
-func (u UserService) GetJwtToken(user *entity.User) (tokenString string, err error) {
+func (u *userService) GetJwtToken(user *entity.User) (tokenString string, err error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"name": user.Name,
 	})
-	tokenString, err = token.SignedString(TokenKey)
+	tokenString, err = token.SignedString(u.TokenKey)
 	return
 }

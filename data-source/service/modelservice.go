@@ -3,6 +3,8 @@ package service
 import (
 	"context"
 	"k3s-nclink-apps/data-source/entity"
+	"log"
+	"sync"
 
 	"github.com/kamva/mgm/v3"
 	"go.mongodb.org/mongo-driver/bson"
@@ -10,18 +12,24 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-type ModelService struct{}
+type modelService struct {
+	sync.Mutex
+	coll *mgm.Collection
+}
 
-func (m ModelService) Create(model *entity.Model) error {
-	coll := mgm.Coll(model)
-	err := coll.Create(model)
+var ModelServ = &modelService{
+	coll: mgm.Coll(&entity.Model{}),
+}
+
+func (m *modelService) Create(model *entity.Model) error {
+	err := m.coll.Create(model)
 	if err != nil {
 		return err
 	}
 	ctx := context.Background()
-	num, err := coll.EstimatedDocumentCount(ctx)
+	num, err := m.coll.EstimatedDocumentCount(ctx)
 	if num <= 1 {
-		_, err = coll.Indexes().CreateOne(ctx, mongo.IndexModel{
+		_, err = m.coll.Indexes().CreateOne(ctx, mongo.IndexModel{
 			Keys:    bson.D{{Key: "name", Value: 1}},
 			Options: options.Index().SetUnique(true),
 		})
@@ -30,35 +38,47 @@ func (m ModelService) Create(model *entity.Model) error {
 }
 
 // Find model
-func (m ModelService) FindByName(name string) (*entity.Model, error) {
+func (m *modelService) FindByName(name string) (*entity.Model, error) {
 	ret := &entity.Model{}
-	coll := mgm.Coll(ret)
-	err := coll.First(bson.M{"name": name}, ret)
+	err := m.coll.First(bson.M{"name": name}, ret)
 	return ret, err
 }
 
-func (m ModelService) FindAll() ([]entity.Model, error) {
+func (m *modelService) FindAll() ([]entity.Model, error) {
 	ret := []entity.Model{}
-	coll := mgm.Coll(&entity.Model{})
-	err := coll.SimpleFind(&ret, bson.M{})
+	err := m.coll.SimpleFind(&ret, bson.M{})
 	return ret, err
 }
 
-func (m ModelService) DeleteByName(name string) error {
+func (m *modelService) DeleteByName(name string) error {
 	model, err := m.FindByName(name)
 	if err != nil {
 		return err
 	}
-	coll := mgm.Coll(model)
-	return coll.Delete(model)
+	return m.coll.Delete(model)
 }
 
-func (m ModelService) UpdateByName(name, def string) error {
+func (m *modelService) UpdateByName(name, def string) (changed bool, err error) {
 	model, err := m.FindByName(name)
 	if err != nil {
-		return err
+		return
 	}
-	model.Def = def
-	coll := mgm.Coll(model)
-	return coll.Update(model)
+	if model.Def != def {
+		model.Def = def
+		err = m.coll.Update(model)
+		changed = err == nil
+		if changed && model.Used > 0 {
+			adapters, err := AdapterServ.FindByModelName(model.Name)
+			if err != nil {
+				log.Println("no adapters match model name:", model.Name)
+			} else {
+				AdapterServ.ResetModel(adapters...)
+			}
+		}
+	}
+	return
+}
+
+func (m *modelService) Update(model *entity.Model) error {
+	return m.coll.Update(model)
 }

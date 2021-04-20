@@ -23,7 +23,7 @@ func init() {
 
 func EnvVar(key string, defaultVal string) string {
 	value := os.Getenv(key)
-	if len(value) == 0 {
+	if value == "" {
 		return defaultVal
 	}
 	return value
@@ -31,7 +31,7 @@ func EnvVar(key string, defaultVal string) string {
 
 func GetEnvOrExit(key string) string {
 	value := EnvVar(key, "")
-	if len(value) == 0 {
+	if value == "" {
 		log.Fatalf("env: %s not set.", key)
 	}
 	return value
