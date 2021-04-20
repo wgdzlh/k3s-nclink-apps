@@ -22,14 +22,15 @@ func (a AuthController) Login(c *gin.Context) {
 		return
 	}
 
-	user, err := a.userservice.Find(&loginInfo)
+	user, err := a.userservice.FindByName(loginInfo.Name)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "User not found."})
 		return
 	}
 
-	if user.Access != "rw" {
+	if user.Access != service.UserAccessType {
 		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "User access limited."})
+		return
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(loginInfo.Password))

@@ -30,9 +30,35 @@ func (m ModelService) Create(model *entity.Model) error {
 }
 
 // Find model
-func (u ModelService) FindByName(name string) (*entity.Model, error) {
+func (m ModelService) FindByName(name string) (*entity.Model, error) {
 	ret := &entity.Model{}
 	coll := mgm.Coll(ret)
 	err := coll.First(bson.M{"name": name}, ret)
 	return ret, err
+}
+
+func (m ModelService) FindAll() ([]entity.Model, error) {
+	ret := []entity.Model{}
+	coll := mgm.Coll(&entity.Model{})
+	err := coll.SimpleFind(&ret, bson.M{})
+	return ret, err
+}
+
+func (m ModelService) DeleteByName(name string) error {
+	model, err := m.FindByName(name)
+	if err != nil {
+		return err
+	}
+	coll := mgm.Coll(model)
+	return coll.Delete(model)
+}
+
+func (m ModelService) UpdateByName(name, def string) error {
+	model, err := m.FindByName(name)
+	if err != nil {
+		return err
+	}
+	model.Def = def
+	coll := mgm.Coll(model)
+	return coll.Update(model)
 }

@@ -12,7 +12,7 @@ import (
 
 type AdapterService struct{}
 
-func (m AdapterService) Create(adapter *entity.Adapter) error {
+func (a AdapterService) Create(adapter *entity.Adapter) error {
 	coll := mgm.Coll(adapter)
 	err := coll.Create(adapter)
 	if err != nil {
@@ -30,7 +30,7 @@ func (m AdapterService) Create(adapter *entity.Adapter) error {
 }
 
 // Find adapter
-func (u AdapterService) FindByName(name string) (*entity.Adapter, error) {
+func (a AdapterService) FindByName(name string) (*entity.Adapter, error) {
 	ret := &entity.Adapter{}
 	coll := mgm.Coll(ret)
 	err := coll.First(bson.M{"name": name}, ret)

@@ -4,7 +4,7 @@ import (
 	"context"
 	"k3s-nclink-apps/config-distribute/controllers"
 	pb "k3s-nclink-apps/configmodel"
-	"k3s-nclink-apps/data-source/entity"
+	com "k3s-nclink-apps/grpc-common/controllers"
 	"k3s-nclink-apps/utils/conv"
 
 	"google.golang.org/grpc"
@@ -15,15 +15,14 @@ import (
 // auth server
 type authServer struct {
 	pb.UnimplementedAuthenticationServer
-	authController controllers.AuthController
+	authController com.AuthController
 }
 
 func (s *authServer) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginReply, error) {
 	name := in.GetName()
 	pass := in.GetPassword()
-	log.Infof("Received login request from: %v", name)
-	loginInfo := &entity.User{Name: name, Password: pass}
-	token, err := s.authController.Login(loginInfo)
+	log.Infoln("Received login request from:", name)
+	token, err := s.authController.Login(name, pass)
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +41,7 @@ type modelDistServer struct {
 
 func (s *modelDistServer) GetModel(ctx context.Context, in *pb.ModelRequest) (*pb.ModelReply, error) {
 	hostname := in.GetHostname()
-	log.Infof("Received model fetch request from: %v", hostname)
+	log.Infoln("Received model fetch request from:", hostname)
 	model, devId, err := s.modelcontroller.Fetch(hostname)
 	if err != nil {
 		return nil, err
@@ -57,5 +56,4 @@ func (s *modelDistServer) GetModel(ctx context.Context, in *pb.ModelRequest) (*p
 func RegisterServices(server *grpc.Server) {
 	pb.RegisterAuthenticationServer(server, &authServer{})
 	pb.RegisterModelDistServer(server, &modelDistServer{})
-	pb.RegisterModelManageServer(server, &modelManageServer{})
 }

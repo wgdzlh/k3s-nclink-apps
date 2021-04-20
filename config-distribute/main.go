@@ -2,8 +2,8 @@ package main
 
 import (
 	"crypto/tls"
-	"k3s-nclink-apps/config-distribute/middlewares"
 	"k3s-nclink-apps/config-distribute/routes"
+	"k3s-nclink-apps/grpc-common/middlewares"
 	"k3s-nclink-apps/utils"
 	"net"
 
@@ -49,7 +49,7 @@ func main() {
 		reflection.Register(server)
 	}
 
-	log.Infoln("start serving on: ", addr)
+	log.Infoln("start serving on:", addr)
 	if err = server.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}

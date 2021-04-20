@@ -15,6 +15,11 @@ import (
 
 type UserService struct{}
 
+var (
+	TokenKey       = []byte(utils.EnvVar("TOKEN_KEY", "")) // JWT token key
+	UserAccessType = utils.EnvVar("USER_ACCESS_TYPE", "ro")
+)
+
 func (u UserService) Create(user *entity.User) error {
 	hash, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.MinCost)
 	if err != nil {
@@ -38,19 +43,12 @@ func (u UserService) Create(user *entity.User) error {
 }
 
 // Find user
-func (u UserService) Find(user *entity.User) (*entity.User, error) {
-	return u.FindByName(user.Name)
-}
-
 func (u UserService) FindByName(name string) (*entity.User, error) {
 	ret := &entity.User{}
 	coll := mgm.Coll(ret)
 	err := coll.First(bson.M{"name": name}, ret)
 	return ret, err
 }
-
-// Get JWT token
-var TokenKey = []byte(utils.EnvVar("TOKEN_KEY", ""))
 
 func (u UserService) GetJwtToken(user *entity.User) (tokenString string, err error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{

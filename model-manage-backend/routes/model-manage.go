@@ -14,7 +14,7 @@ type modelManageServer struct {
 }
 
 func (s *modelManageServer) SaveModel(ctx context.Context, model *pb.Model) (*pb.OpRet, error) {
-	log.Infof("Save model: %v", model)
+	log.Infoln("Save model:", model)
 	return nil, nil
 }
 
