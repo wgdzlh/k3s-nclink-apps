@@ -12,5 +12,5 @@ WORKDIR /app
 COPY ./mode-manage-backend/prod.env .env
 COPY --from=build /app/mode_manage .
 
-EXPOSE 8082
+EXPOSE 8082 8092
 ENTRYPOINT ["./mode_manage"]

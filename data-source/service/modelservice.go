@@ -37,17 +37,50 @@ func (m *modelService) Create(model *entity.Model) error {
 	return err
 }
 
+func (m *modelService) Save(name, def string) error {
+	return m.coll.Create(entity.NewModel(name, def))
+}
+
 // Find model
+func (m *modelService) FindById(id string) (*entity.Model, error) {
+	ret := &entity.Model{}
+	err := m.coll.FindByID(id, ret)
+	return ret, err
+}
+
 func (m *modelService) FindByName(name string) (*entity.Model, error) {
 	ret := &entity.Model{}
 	err := m.coll.First(bson.M{"name": name}, ret)
 	return ret, err
 }
 
-func (m *modelService) FindAll() ([]entity.Model, error) {
+func (m *modelService) FindAll() ([]entity.Model, int64, error) {
 	ret := []entity.Model{}
 	err := m.coll.SimpleFind(&ret, bson.M{})
-	return ret, err
+	if err != nil {
+		return nil, 0, err
+	}
+	num, err := m.coll.EstimatedDocumentCount(context.Background())
+	return ret, num, err
+}
+
+func (m *modelService) delete(model *entity.Model) error {
+	err := m.coll.Delete(model)
+	if err != nil {
+		return err
+	}
+	if model.Name != "" && model.Used > 0 {
+		return AdapterServ.RenameModelFrom(model.Name, "")
+	}
+	return nil
+}
+
+func (m *modelService) DeleteById(id string) error {
+	model, err := m.FindById(id)
+	if err != nil {
+		return err
+	}
+	return m.delete(model)
 }
 
 func (m *modelService) DeleteByName(name string) error {
@@ -55,7 +88,32 @@ func (m *modelService) DeleteByName(name string) error {
 	if err != nil {
 		return err
 	}
-	return m.coll.Delete(model)
+	return m.delete(model)
+}
+
+func (m *modelService) update(model *entity.Model) error {
+	return m.coll.Update(model)
+}
+
+func (m *modelService) UpdateById(id, def string) (changed bool, err error) {
+	model, err := m.FindById(id)
+	if err != nil {
+		return
+	}
+	if model.Def != def {
+		model.Def = def
+		err = m.coll.Update(model)
+		changed = err == nil
+		if changed && model.Used > 0 {
+			adapters, err := AdapterServ.FindByModelName(model.Name)
+			if err != nil {
+				log.Println("no adapters match model name:", model.Name)
+			} else {
+				AdapterServ.ResetModel(adapters...)
+			}
+		}
+	}
+	return
 }
 
 func (m *modelService) UpdateByName(name, def string) (changed bool, err error) {
@@ -79,6 +137,20 @@ func (m *modelService) UpdateByName(name, def string) (changed bool, err error) 
 	return
 }
 
-func (m *modelService) Update(model *entity.Model) error {
-	return m.coll.Update(model)
+func (m *modelService) Rename(id, newName string) error {
+	model, err := m.FindById(id)
+	if err != nil {
+		return err
+	}
+	oldName := model.Name
+	if oldName != newName {
+		model.Name = newName
+		if err = m.update(model); err != nil {
+			return err
+		}
+		if model.Used > 0 {
+			err = AdapterServ.RenameModelFrom(oldName, newName)
+		}
+	}
+	return err
 }

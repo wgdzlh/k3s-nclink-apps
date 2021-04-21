@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"k3s-nclink-apps/data-source/entity"
 	"k3s-nclink-apps/data-source/service"
-	"net/http"
+	"k3s-nclink-apps/model-manage-backend/rest"
 
 	"github.com/gin-gonic/gin"
 )
@@ -12,103 +12,102 @@ import (
 type ModelController struct{}
 
 func (m ModelController) FetchAll(c *gin.Context) {
-	ret, err := service.ModelServ.FindAll()
+	ret, num, err := service.ModelServ.FindAll()
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		rest.InternalError(c, err.Error())
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{
-		"models": ret,
-	})
+	c.Header("Content-Range:", fmt.Sprintf("models 0-%d/%d", len(ret), num))
+	rest.Ret(c, "models", ret)
 }
 
 func (m ModelController) New(c *gin.Context) {
 	var model entity.Model
 	err := c.ShouldBindJSON(&model)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		rest.BadRequest(c, err.Error())
 		return
 	}
-	newModel := entity.NewModel(model.Name, model.Def)
-	err = service.ModelServ.Create(newModel)
+	err = service.ModelServ.Save(model.Name, model.Def)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		rest.InternalError(c, err.Error())
 		return
 	}
-
-	retMsg := fmt.Sprintf("model %s created.", model.Name)
-	c.JSON(http.StatusOK, gin.H{
-		"status": "OK",
-		"msg":    retMsg,
-	})
+	msg := fmt.Sprintf("model %s created.", model.Name)
+	rest.Created(c, msg)
 }
 
 func (m ModelController) Dup(c *gin.Context) {
-	name := c.Query("name")
-	newName := c.Query("new-name")
-	if name == "" || newName == "" {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "query 'name' or 'new-name' not set."})
+	id := c.Param("id")
+	newName := c.Param("new-name")
+	if id == "" || newName == "" {
+		rest.BadRequest(c, "param 'name' or 'dup' not set.")
 		return
 	}
-	model, err := service.ModelServ.FindByName(name)
+	model, err := service.ModelServ.FindById(id)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		rest.BadRequest(c, err.Error())
 		return
 	}
-	newModel := entity.NewModel(newName, model.Def)
-	err = service.ModelServ.Create(newModel)
+	err = service.ModelServ.Save(newName, model.Def)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		rest.InternalError(c, err.Error())
 		return
 	}
-
-	retMsg := fmt.Sprintf("model %s duplicated as %s.", name, newName)
-	c.JSON(http.StatusOK, gin.H{
-		"status": "OK",
-		"msg":    retMsg,
-	})
+	msg := fmt.Sprintf("model %s duplicated as %s.", model.Name, newName)
+	rest.Created(c, msg)
 }
 
 func (m ModelController) Edit(c *gin.Context) {
 	var model entity.Model
 	err := c.ShouldBindJSON(&model)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		rest.BadRequest(c, err.Error())
 		return
 	}
-	changed, err := service.ModelServ.UpdateByName(model.Name, model.Def)
+	if model.ID.IsZero() {
+		rest.BadRequest(c, "'id' not set in JSON.")
+		return
+	}
+	if model.ID.Hex() != c.Param("id") {
+		rest.BadRequest(c, "'id' not match to param.")
+		return
+	}
+	changed, err := service.ModelServ.UpdateById(model.ID.Hex(), model.Def)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		rest.InternalError(c, err.Error())
 		return
 	}
-
-	opRet := "unchanged"
+	res := "unchanged"
 	if changed {
-		opRet = "updated"
-		
+		res = "updated"
 	}
-	retMsg := fmt.Sprintf("model %s %s.", model.Name, opRet)
-	c.JSON(http.StatusOK, gin.H{
-		"status": "OK",
-		"msg":    retMsg,
-	})
+	msg := fmt.Sprintf("model %s %s.", model.Name, res)
+	rest.OK(c, msg)
 }
 
-func (m ModelController) Remove(c *gin.Context) {
-	name := c.Query("name")
-	if name == "" {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "query 'name' not set."})
+func (m ModelController) Rename(c *gin.Context) {
+	id := c.Param("id")
+	newName := c.Param("new-name")
+	if id == "" || newName == "" {
+		rest.BadRequest(c, "param 'name' or 'dup' not set.")
 		return
 	}
-	err := service.ModelServ.DeleteByName(name)
-	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	if err := service.ModelServ.Rename(id, newName); err != nil {
+		rest.InternalError(c, err.Error())
 		return
 	}
+	msg := fmt.Sprintf("model %s renamed to %s.", id, newName)
+	rest.OK(c, msg)
+}
 
-	retMsg := fmt.Sprintf("model %s deleted.", name)
-	c.JSON(http.StatusOK, gin.H{
-		"status": "OK",
-		"msg":    retMsg,
-	})
+func (m ModelController) Delete(c *gin.Context) {
+	id := c.Param("id")
+	err := service.ModelServ.DeleteById(id)
+	if err != nil {
+		rest.InternalError(c, err.Error())
+		return
+	}
+	msg := fmt.Sprintf("model %s deleted.", id)
+	rest.OK(c, msg)
 }

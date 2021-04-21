@@ -31,7 +31,7 @@ func (a *adapterService) Create(adapter *entity.Adapter) error {
 		return err
 	}
 	model.Used++
-	if err = ModelServ.Update(model); err != nil {
+	if err = ModelServ.update(model); err != nil {
 		return err
 	}
 	ctx := context.Background()
@@ -71,7 +71,7 @@ func (a *adapterService) DeleteByName(name string) error {
 	model, err := ModelServ.FindByName(adapter.ModelName)
 	if model.Used > 0 {
 		model.Used--
-		err = ModelServ.Update(model)
+		err = ModelServ.update(model)
 	}
 	return err
 }
@@ -102,12 +102,12 @@ func (a *adapterService) ChangeModel(name string, modelName string) error {
 	defer a.ResetModel(*adapter)
 	if model.Used > 0 {
 		model.Used--
-		if err = ModelServ.Update(model); err != nil {
+		if err = ModelServ.update(model); err != nil {
 			return err
 		}
 	}
 	newModel.Used++
-	return ModelServ.Update(newModel)
+	return ModelServ.update(newModel)
 }
 
 func (a *adapterService) ResetModel(adapters ...entity.Adapter) {
@@ -115,4 +115,22 @@ func (a *adapterService) ResetModel(adapters ...entity.Adapter) {
 		log.Println("reset model on:", adapter.Name)
 		mqtt.ResetModel(adapter.Name)
 	}
+}
+
+func (a *adapterService) RenameModel(newName string, adapters ...entity.Adapter) error {
+	for _, adapter := range adapters {
+		adapter.ModelName = newName
+		if err := a.coll.Update(&adapter); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (a *adapterService) RenameModelFrom(oldName, newName string) error {
+	adapters, err := a.FindByModelName(oldName)
+	if err != nil {
+		return err
+	}
+	return a.RenameModel(newName, adapters...)
 }

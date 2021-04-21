@@ -21,10 +21,11 @@ func setAuthRoute(router *gin.Engine) {
 	})
 
 	authGroup.GET("/models", modelController.FetchAll)
-	authGroup.PUT("/model", modelController.New)
-	authGroup.POST("/model", modelController.Dup)
-	authGroup.PUT("/update/model", modelController.Edit)
-	authGroup.DELETE("/model", modelController.Remove)
+	authGroup.POST("/models", modelController.New)
+	authGroup.POST("/models/:id/:new-name", modelController.Dup)
+	authGroup.PUT("/models/:id", modelController.Edit)
+	authGroup.PUT("/models/:id/:new-name", modelController.Rename)
+	authGroup.DELETE("/models/:id", modelController.Delete)
 }
 
 func InitRoute() *gin.Engine {

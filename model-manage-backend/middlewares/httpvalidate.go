@@ -2,7 +2,7 @@ package middlewares
 
 import (
 	"k3s-nclink-apps/data-source/service"
-	"net/http"
+	"k3s-nclink-apps/model-manage-backend/rest"
 	"strings"
 
 	"github.com/dgrijalva/jwt-go"
@@ -14,15 +14,13 @@ func AuthErrorHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.Request.Header.Get("Authorization")
 		if authHeader == "" {
-			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-				"error": "Authorization header is missing.",
-			})
+			rest.BadRequest(c, "Authorization header is missing.")
 			return
 		}
 
 		temp := strings.SplitN(authHeader, "Bearer", 2)
 		if len(temp) < 2 {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Wrong token."})
+			rest.Unauthorized(c, "Wrong token.")
 			return
 		}
 
@@ -31,7 +29,7 @@ func AuthErrorHandler() gin.HandlerFunc {
 			return service.UserServ.TokenKey, nil
 		})
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+			rest.Unauthorized(c, err.Error())
 			return
 		}
 
@@ -39,17 +37,17 @@ func AuthErrorHandler() gin.HandlerFunc {
 			name := claims["name"].(string)
 			user, err := service.UserServ.FindByName(name)
 			if err != nil {
-				c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "User not found."})
+				rest.Forbidden(c, "User not found.")
 				return
 			}
 			if user.Access != service.UserServ.AccessType {
-				c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "User access limited."})
+				rest.Forbidden(c, "User access limited.")
 				return
 			}
-			c.Set("user", user)
+			// c.Set("user", user)
 			c.Next()
 		} else {
-			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "Token invalid."})
+			rest.Forbidden(c, "Token invalid.")
 		}
 	}
 }
