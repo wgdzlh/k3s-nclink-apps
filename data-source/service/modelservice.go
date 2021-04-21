@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"k3s-nclink-apps/data-source/entity"
-	"log"
 	"sync"
 
 	"github.com/kamva/mgm/v3"
@@ -95,46 +94,37 @@ func (m *modelService) update(model *entity.Model) error {
 	return m.coll.Update(model)
 }
 
-func (m *modelService) UpdateById(id, def string) (changed bool, err error) {
-	model, err := m.FindById(id)
-	if err != nil {
-		return
-	}
+func (m *modelService) updateDef(model *entity.Model, def string) (changed bool, err error) {
 	if model.Def != def {
 		model.Def = def
 		err = m.coll.Update(model)
 		changed = err == nil
-		if changed && model.Used > 0 {
-			adapters, err := AdapterServ.FindByModelName(model.Name)
-			if err != nil {
-				log.Println("no adapters match model name:", model.Name)
-			} else {
-				AdapterServ.ResetModel(adapters...)
-			}
+		if !changed || model.Used == 0 {
+			return
 		}
+		adapters, err := AdapterServ.FindByModelName(model.Name)
+		if err != nil {
+			return changed, err
+		}
+		AdapterServ.ResetModel(adapters...)
 	}
 	return
 }
 
-func (m *modelService) UpdateByName(name, def string) (changed bool, err error) {
+func (m *modelService) UpdateById(id string, in *entity.Model) (changed bool, err error) {
+	model, err := m.FindById(id)
+	if err != nil {
+		return
+	}
+	return m.updateDef(model, in.Def)
+}
+
+func (m *modelService) UpdateByName(name string, in *entity.Model) (changed bool, err error) {
 	model, err := m.FindByName(name)
 	if err != nil {
 		return
 	}
-	if model.Def != def {
-		model.Def = def
-		err = m.coll.Update(model)
-		changed = err == nil
-		if changed && model.Used > 0 {
-			adapters, err := AdapterServ.FindByModelName(model.Name)
-			if err != nil {
-				log.Println("no adapters match model name:", model.Name)
-			} else {
-				AdapterServ.ResetModel(adapters...)
-			}
-		}
-	}
-	return
+	return m.updateDef(model, in.Def)
 }
 
 func (m *modelService) Rename(id, newName string) error {
@@ -145,10 +135,8 @@ func (m *modelService) Rename(id, newName string) error {
 	oldName := model.Name
 	if oldName != newName {
 		model.Name = newName
-		if err = m.update(model); err != nil {
-			return err
-		}
-		if model.Used > 0 {
+		err = m.update(model)
+		if err == nil && model.Used > 0 {
 			err = AdapterServ.RenameModelFrom(oldName, newName)
 		}
 	}

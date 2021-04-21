@@ -9,72 +9,73 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type ModelController struct{}
+type AdapterController struct{}
 
-func (m ModelController) FetchAll(c *gin.Context) {
-	ret, num, err := service.ModelServ.FindAll()
+func (a AdapterController) FetchAll(c *gin.Context) {
+	ret, num, err := service.AdapterServ.FindAll()
 	if err != nil {
 		rest.InternalError(c, err.Error())
 		return
 	}
-	c.Header("Content-Range", fmt.Sprintf("models 0-%d/%d", len(ret), num))
-	rest.Ret(c, "models", ret)
+	c.Header("Content-Range", fmt.Sprintf("adapters 0-%d/%d", len(ret), num))
+	rest.Ret(c, "adapters", ret)
 }
 
-func (m ModelController) New(c *gin.Context) {
-	var model entity.Model
-	err := c.ShouldBindJSON(&model)
+func (a AdapterController) New(c *gin.Context) {
+	var adapter entity.Adapter
+	err := c.ShouldBindJSON(&adapter)
 	if err != nil {
 		rest.BadRequest(c, err.Error())
 		return
 	}
-	err = service.ModelServ.Save(model.Name, model.Def)
+	err = service.AdapterServ.Create(&adapter)
 	if err != nil {
 		rest.InternalError(c, err.Error())
 		return
 	}
-	msg := fmt.Sprintf("model %s created.", model.Name)
+	msg := fmt.Sprintf("adapter %s created.", adapter.Name)
 	rest.Created(c, msg)
 }
 
-func (m ModelController) Dup(c *gin.Context) {
+func (a AdapterController) Dup(c *gin.Context) {
 	id := c.Param("id")
 	newName := c.Param("new-name")
 	if id == "" || newName == "" {
 		rest.BadRequest(c, "param 'name' or 'dup' not set.")
 		return
 	}
-	model, err := service.ModelServ.FindById(id)
+	adapter, err := service.AdapterServ.FindById(id)
 	if err != nil {
 		rest.BadRequest(c, err.Error())
 		return
 	}
-	err = service.ModelServ.Save(newName, model.Def)
+	newAdapter := entity.NewAdapter(newName, adapter.DevId, adapter.ModelName)
+	err = service.AdapterServ.Create(newAdapter)
 	if err != nil {
 		rest.InternalError(c, err.Error())
 		return
 	}
-	msg := fmt.Sprintf("model %s duplicated as %s.", model.Name, newName)
+	msg := fmt.Sprintf("adapter %s duplicated as %s.", adapter.Name, newName)
 	rest.Created(c, msg)
 }
 
-func (m ModelController) Edit(c *gin.Context) {
-	var model entity.Model
-	err := c.ShouldBindJSON(&model)
+func (a AdapterController) Edit(c *gin.Context) {
+	var adapter entity.Adapter
+	err := c.ShouldBindJSON(&adapter)
 	if err != nil {
 		rest.BadRequest(c, err.Error())
 		return
 	}
-	if model.ID.IsZero() {
+	if adapter.ID.IsZero() {
 		rest.BadRequest(c, "'id' not set in JSON.")
 		return
 	}
 	id := c.Param("id")
-	if model.ID.Hex() != id {
+	if adapter.ID.Hex() != id {
 		rest.BadRequest(c, "'id' not match to param.")
 		return
 	}
-	changed, err := service.ModelServ.UpdateById(id, &model)
+	changed, err := service.AdapterServ.UpdateById(id, &adapter)
 	if err != nil {
 		rest.InternalError(c, err.Error())
 		return
@@ -83,32 +84,32 @@ func (m ModelController) Edit(c *gin.Context) {
 	if changed {
 		res = "updated"
 	}
-	msg := fmt.Sprintf("model %s %s.", model.Name, res)
+	msg := fmt.Sprintf("adapter %s %s.", adapter.Name, res)
 	rest.OK(c, msg)
 }
 
-func (m ModelController) Rename(c *gin.Context) {
+func (a AdapterController) Rename(c *gin.Context) {
 	id := c.Param("id")
 	newName := c.Param("new-name")
 	if id == "" || newName == "" {
 		rest.BadRequest(c, "param 'id' or 'new-name' not set.")
 		return
 	}
-	if err := service.ModelServ.Rename(id, newName); err != nil {
+	if err := service.AdapterServ.Rename(id, newName); err != nil {
 		rest.InternalError(c, err.Error())
 		return
 	}
-	msg := fmt.Sprintf("model %s renamed to %s.", id, newName)
+	msg := fmt.Sprintf("adapter %s renamed to %s.", id, newName)
 	rest.OK(c, msg)
 }
 
-func (m ModelController) Delete(c *gin.Context) {
+func (a AdapterController) Delete(c *gin.Context) {
 	id := c.Param("id")
-	err := service.ModelServ.DeleteById(id)
+	err := service.AdapterServ.DeleteById(id)
 	if err != nil {
 		rest.InternalError(c, err.Error())
 		return
 	}
-	msg := fmt.Sprintf("model %s deleted.", id)
+	msg := fmt.Sprintf("adapter %s deleted.", id)
 	rest.OK(c, msg)
 }
