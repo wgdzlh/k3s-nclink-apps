@@ -17,7 +17,7 @@ func (m ModelController) FetchAll(c *gin.Context) {
 		rest.InternalError(c, err.Error())
 		return
 	}
-	c.Header("Content-Range", fmt.Sprintf("models 0-%d/%d", len(ret), num))
+	c.Header("X-Total-Count", fmt.Sprint(num))
 	rest.Ret(c, "models", ret)
 }
 
