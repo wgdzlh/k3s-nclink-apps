@@ -43,5 +43,5 @@ func (a AuthController) Login(c *gin.Context) {
 		return
 	}
 
-	rest.Ret(c, "token", token)
+	rest.RetKV(c, "token", token)
 }

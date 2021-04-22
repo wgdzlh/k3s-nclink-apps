@@ -11,6 +11,7 @@ import (
 func setAuthRoute(router *gin.Engine) {
 	authController := controllers.AuthController{}
 	modelController := controllers.ModelController{}
+	adapterController := controllers.AdapterController{}
 
 	router.POST("/login", authController.Login)
 
@@ -21,11 +22,20 @@ func setAuthRoute(router *gin.Engine) {
 	})
 
 	authGroup.GET("/models", modelController.FetchAll)
+	authGroup.GET("/models/:id", modelController.One)
 	authGroup.POST("/models", modelController.New)
-	authGroup.POST("/models/:id/:new-name", modelController.Dup)
+	authGroup.POST("/models/:id", modelController.Dup)
 	authGroup.PUT("/models/:id", modelController.Edit)
-	authGroup.PUT("/models/:id/:new-name", modelController.Rename)
+	authGroup.PUT("/models/:id/rename", modelController.Rename)
 	authGroup.DELETE("/models/:id", modelController.Delete)
+
+	authGroup.GET("/adapters", adapterController.FetchAll)
+	authGroup.GET("/adapters/:id", adapterController.One)
+	authGroup.POST("/adapters", adapterController.New)
+	authGroup.POST("/adapters/:id", adapterController.Dup)
+	authGroup.PUT("/adapters/:id", adapterController.Edit)
+	authGroup.PUT("/adapters/:id/rename", adapterController.Rename)
+	authGroup.DELETE("/adapters/:id", adapterController.Delete)
 }
 
 func InitRoute() *gin.Engine {

@@ -11,6 +11,12 @@ import (
 
 type AdapterController struct{}
 
+type dummyAdapter struct {
+	Name    string `json:"name"`
+	DevId   string `json:"dev_id"`
+	ModelId string `json:"model_id"`
+}
+
 func (a AdapterController) FetchAll(c *gin.Context) {
 	ret, num, err := service.AdapterServ.FindAll()
 	if err != nil {
@@ -18,23 +24,43 @@ func (a AdapterController) FetchAll(c *gin.Context) {
 		return
 	}
 	c.Header("X-Total-Count", fmt.Sprint(num))
-	rest.Ret(c, "adapters", ret)
+	rest.RetRaw(c, ret)
 }
 
-func (a AdapterController) New(c *gin.Context) {
-	var adapter entity.Adapter
-	err := c.ShouldBindJSON(&adapter)
+func (a AdapterController) One(c *gin.Context) {
+	id := c.Param("id")
+	if id == "" {
+		rest.BadRequest(c, "param 'id' not set.")
+		return
+	}
+	adapter, err := service.AdapterServ.FindById(id)
 	if err != nil {
 		rest.BadRequest(c, err.Error())
 		return
 	}
-	err = service.AdapterServ.Create(&adapter)
+	rest.RetRaw(c, adapter)
+}
+
+func (a AdapterController) New(c *gin.Context) {
+	var da dummyAdapter
+	err := c.ShouldBindJSON(&da)
+	if err != nil {
+		rest.BadRequest(c, err.Error())
+		return
+	}
+	model, err := service.ModelServ.FindById(da.ModelId)
+	if err != nil {
+		rest.BadRequest(c, err.Error())
+		return
+	}
+	realone := entity.NewAdapter(da.Name, da.DevId, model.Name)
+	err = service.AdapterServ.Save(realone, model)
 	if err != nil {
 		rest.InternalError(c, err.Error())
 		return
 	}
-	msg := fmt.Sprintf("adapter %s created.", adapter.Name)
-	rest.Created(c, msg)
+	msg := fmt.Sprintf("adapter %s created.", realone.Name)
+	rest.CreatedRaw(c, gin.H{"id": realone.ID.Hex(), "msg": msg})
 }
 
 func (a AdapterController) Dup(c *gin.Context) {
@@ -85,12 +111,12 @@ func (a AdapterController) Edit(c *gin.Context) {
 		res = "updated"
 	}
 	msg := fmt.Sprintf("adapter %s %s.", adapter.Name, res)
-	rest.OK(c, msg)
+	rest.RetRaw(c, gin.H{"id": id, "msg": msg})
 }
 
 func (a AdapterController) Rename(c *gin.Context) {
 	id := c.Param("id")
-	newName := c.Param("new-name")
+	newName := c.Query("new-name")
 	if id == "" || newName == "" {
 		rest.BadRequest(c, "param 'id' or 'new-name' not set.")
 		return

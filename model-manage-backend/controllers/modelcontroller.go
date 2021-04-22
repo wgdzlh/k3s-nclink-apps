@@ -18,7 +18,22 @@ func (m ModelController) FetchAll(c *gin.Context) {
 		return
 	}
 	c.Header("X-Total-Count", fmt.Sprint(num))
-	rest.Ret(c, "models", ret)
+	// c.Header("Access-Control-Expose-Headers", "X-Total-Count")
+	rest.RetRaw(c, ret)
+}
+
+func (m ModelController) One(c *gin.Context) {
+	id := c.Param("id")
+	if id == "" {
+		rest.BadRequest(c, "param 'id' not set.")
+		return
+	}
+	model, err := service.ModelServ.FindById(id)
+	if err != nil {
+		rest.BadRequest(c, err.Error())
+		return
+	}
+	rest.RetRaw(c, model)
 }
 
 func (m ModelController) New(c *gin.Context) {
@@ -84,12 +99,12 @@ func (m ModelController) Edit(c *gin.Context) {
 		res = "updated"
 	}
 	msg := fmt.Sprintf("model %s %s.", model.Name, res)
-	rest.OK(c, msg)
+	rest.RetRaw(c, gin.H{"id": id, "msg": msg})
 }
 
 func (m ModelController) Rename(c *gin.Context) {
 	id := c.Param("id")
-	newName := c.Param("new-name")
+	newName := c.Query("new-name")
 	if id == "" || newName == "" {
 		rest.BadRequest(c, "param 'id' or 'new-name' not set.")
 		return

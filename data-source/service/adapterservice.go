@@ -45,6 +45,19 @@ func (a *adapterService) Create(adapter *entity.Adapter) error {
 	return err
 }
 
+func (a *adapterService) Save(adapter *entity.Adapter, model *entity.Model) error {
+	ModelServ.Lock()
+	defer ModelServ.Unlock()
+	if err := a.coll.Create(adapter); err != nil {
+		return err
+	}
+	model.Used++
+	if err := ModelServ.update(model); err != nil {
+		return err
+	}
+	return a.coll.First(bson.M{"name": adapter.Name}, adapter)
+}
+
 // Find adapter
 func (a *adapterService) FindById(id string) (*entity.Adapter, error) {
 	ret := &entity.Adapter{}
