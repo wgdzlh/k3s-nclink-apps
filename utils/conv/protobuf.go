@@ -22,6 +22,6 @@ func DbModelToWireModel(in *entity.Model) (*pb.Model, error) {
 	if err != nil {
 		return nil, err
 	}
-	ret.Name = in.Name
+	ret.Id = in.Id
 	return ret, nil
 }

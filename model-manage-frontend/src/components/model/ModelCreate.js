@@ -4,7 +4,7 @@ const ModelCreate = (props) => {
   return (
     <Create title="Create Model" {...props}>
       <SimpleForm>
-        <TextInput source="name" />
+        <TextInput source="id" />
         <TextInput multiline fullWidth source="def" />
       </SimpleForm>
     </Create>

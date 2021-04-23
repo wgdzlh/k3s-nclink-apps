@@ -11,12 +11,6 @@ import (
 
 type AdapterController struct{}
 
-type dummyAdapter struct {
-	Name    string `json:"name"`
-	DevId   string `json:"dev_id"`
-	ModelId string `json:"model_id"`
-}
-
 func (a AdapterController) FetchAll(c *gin.Context) {
 	ret, num, err := service.AdapterServ.FindAll()
 	if err != nil {
@@ -42,7 +36,7 @@ func (a AdapterController) One(c *gin.Context) {
 }
 
 func (a AdapterController) New(c *gin.Context) {
-	var da dummyAdapter
+	var da entity.Adapter
 	err := c.ShouldBindJSON(&da)
 	if err != nil {
 		rest.BadRequest(c, err.Error())
@@ -50,58 +44,69 @@ func (a AdapterController) New(c *gin.Context) {
 	}
 	model, err := service.ModelServ.FindById(da.ModelId)
 	if err != nil {
-		rest.BadRequest(c, err.Error())
+		rest.BadRequest(c, "model not found.")
 		return
 	}
-	realone := entity.NewAdapter(da.Name, da.DevId, model.Name)
-	err = service.AdapterServ.Save(realone, model)
+	newAdapter := entity.NewAdapter(da.Id, da.DevId, model.Id)
+	err = service.AdapterServ.Save(newAdapter, model)
 	if err != nil {
 		rest.InternalError(c, err.Error())
 		return
 	}
-	msg := fmt.Sprintf("adapter %s created.", realone.Name)
-	rest.CreatedRaw(c, gin.H{"id": realone.ID.Hex(), "msg": msg})
+	msg := fmt.Sprintf("adapter %s created.", newAdapter.Id)
+	rest.CreatedRaw(c, gin.H{"id": newAdapter.Id, "msg": msg})
 }
 
 func (a AdapterController) Dup(c *gin.Context) {
 	id := c.Param("id")
-	newName := c.Param("new-name")
-	if id == "" || newName == "" {
-		rest.BadRequest(c, "param 'name' or 'dup' not set.")
+	newId := c.Query("new-id")
+	if id == "" || newId == "" {
+		rest.BadRequest(c, "param 'id' or 'new-id' not set.")
 		return
 	}
 	adapter, err := service.AdapterServ.FindById(id)
 	if err != nil {
-		rest.BadRequest(c, err.Error())
+		rest.BadRequest(c, "adapter not found.")
 		return
 	}
-	newAdapter := entity.NewAdapter(newName, adapter.DevId, adapter.ModelName)
-	err = service.AdapterServ.Create(newAdapter)
+	model, err := service.ModelServ.FindById(adapter.ModelId)
+	if err != nil {
+		rest.BadRequest(c, "model not found.")
+		return
+	}
+	newAdapter := entity.NewAdapter(newId, adapter.DevId, adapter.ModelId)
+	err = service.AdapterServ.Save(newAdapter, model)
 	if err != nil {
 		rest.InternalError(c, err.Error())
 		return
 	}
-	msg := fmt.Sprintf("adapter %s duplicated as %s.", adapter.Name, newName)
-	rest.Created(c, msg)
+	msg := fmt.Sprintf("adapter %s duplicated as %s.", adapter.Id, newId)
+	rest.CreatedRaw(c, gin.H{"id": newId, "msg": msg})
 }
 
 func (a AdapterController) Edit(c *gin.Context) {
-	var adapter entity.Adapter
-	err := c.ShouldBindJSON(&adapter)
+	var da entity.Adapter
+	err := c.ShouldBindJSON(&da)
 	if err != nil {
 		rest.BadRequest(c, err.Error())
 		return
 	}
-	if adapter.ID.IsZero() {
+	if da.Id == "" {
 		rest.BadRequest(c, "'id' not set in JSON.")
 		return
 	}
 	id := c.Param("id")
-	if adapter.ID.Hex() != id {
+	if da.Id != id {
 		rest.BadRequest(c, "'id' not match to param.")
 		return
 	}
-	changed, err := service.AdapterServ.UpdateById(id, &adapter)
+	model, err := service.ModelServ.FindById(da.ModelId)
+	if err != nil {
+		rest.BadRequest(c, "model not found.")
+		return
+	}
+	newAdapter := entity.NewAdapter(da.Id, da.DevId, model.Id)
+	changed, err := service.AdapterServ.UpdateById(id, newAdapter)
 	if err != nil {
 		rest.InternalError(c, err.Error())
 		return
@@ -110,22 +115,22 @@ func (a AdapterController) Edit(c *gin.Context) {
 	if changed {
 		res = "updated"
 	}
-	msg := fmt.Sprintf("adapter %s %s.", adapter.Name, res)
+	msg := fmt.Sprintf("adapter %s %s.", da.Id, res)
 	rest.RetRaw(c, gin.H{"id": id, "msg": msg})
 }
 
 func (a AdapterController) Rename(c *gin.Context) {
 	id := c.Param("id")
-	newName := c.Query("new-name")
-	if id == "" || newName == "" {
-		rest.BadRequest(c, "param 'id' or 'new-name' not set.")
+	newId := c.Query("new-id")
+	if id == "" || newId == "" {
+		rest.BadRequest(c, "param 'id' or 'new-id' not set.")
 		return
 	}
-	if err := service.AdapterServ.Rename(id, newName); err != nil {
+	if err := service.AdapterServ.Rename(id, newId); err != nil {
 		rest.InternalError(c, err.Error())
 		return
 	}
-	msg := fmt.Sprintf("adapter %s renamed to %s.", id, newName)
+	msg := fmt.Sprintf("adapter %s renamed to %s.", id, newId)
 	rest.OK(c, msg)
 }
 

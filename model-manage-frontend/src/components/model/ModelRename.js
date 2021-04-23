@@ -4,7 +4,7 @@ const ModelRename = (props) => {
   return (
     <Edit title="Rename Model" {...props}>
       <SimpleForm>
-        <TextInput source="name" />
+        <TextInput source="id" />
         <TextField source="def" />
       </SimpleForm>
     </Edit>

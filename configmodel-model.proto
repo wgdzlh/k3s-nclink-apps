@@ -16,7 +16,7 @@ service ModelManage {
 
 // Model definition.
 message Model {
-  string name = 1;
+  string id = 1;
   repeated Sample sample = 2;
   repeated Query query = 3;
   repeated Tweak tweak = 4;

@@ -8,15 +8,15 @@ import (
 
 type Adapter struct {
 	mgm.DefaultModel `bson:",inline"`
-	Name             string `json:"name" bson:"name"`
+	Id               string `json:"id" bson:"id"`
 	DevId            string `json:"dev_id" bson:"dev_id"`
-	ModelName        string `json:"model_name" bson:"model_name"`
+	ModelId          string `json:"model_id" bson:"model_id"`
 }
 
-func NewAdapter(name, devId, modelName string) *Adapter {
+func NewAdapter(id, devId, modelId string) *Adapter {
 	return &Adapter{
-		Name:      name,
-		DevId:     devId,
-		ModelName: modelName,
+		Id:      id,
+		DevId:   devId,
+		ModelId: modelId,
 	}
 }

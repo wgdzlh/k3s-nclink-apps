@@ -1,5 +1,6 @@
 import { Admin, Resource, fetchUtils } from "react-admin";
 import jsonServerProvider from "ra-data-json-server";
+import AuthProvider from "./AuthProvider";
 
 import {
   ModelList,
@@ -16,10 +17,14 @@ import {
 } from "./components/adapter";
 
 const httpClient = (url, options = {}) => {
+  const auth = localStorage.getItem("auth");
+  if (!auth) {
+    return Promise.reject();
+  }
+  const { token } = JSON.parse(auth);
   options.user = {
     authenticated: true,
-    token:
-      "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiYWRtaW4ifQ.toNR4P8fvShGslzjTdOjQasLM-teflgYmeqEAz1NKJs",
+    token: `Bearer ${token}`,
   };
   return fetchUtils.fetchJson(url, options);
 };
@@ -31,7 +36,7 @@ const dataProvider = jsonServerProvider(
 
 function App() {
   return (
-    <Admin dataProvider={dataProvider}>
+    <Admin authProvider={AuthProvider} dataProvider={dataProvider}>
       <Resource
         name="models"
         list={ModelList}

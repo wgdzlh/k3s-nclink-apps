@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"k3s-nclink-apps/data-source/entity"
 	"k3s-nclink-apps/data-source/service"
 	"k3s-nclink-apps/model-manage-backend/rest"
 
@@ -12,15 +11,20 @@ import (
 // AuthController is for auth logic
 type AuthController struct{}
 
+type loginInfo struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
 func (a AuthController) Login(c *gin.Context) {
-	var loginInfo entity.User
+	var loginInfo loginInfo
 	err := c.ShouldBindJSON(&loginInfo)
 	if err != nil {
 		rest.BadRequest(c, err.Error())
 		return
 	}
 
-	user, err := service.UserServ.FindByName(loginInfo.Name)
+	user, err := service.UserServ.FindByName(loginInfo.Username)
 	if err != nil {
 		rest.Unauthorized(c, "User not found.")
 		return

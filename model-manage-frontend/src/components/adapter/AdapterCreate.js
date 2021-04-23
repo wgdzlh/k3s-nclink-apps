@@ -10,10 +10,10 @@ const AdapterCreate = (props) => {
   return (
     <Create title="Create Adapter" {...props}>
       <SimpleForm>
-        <TextInput source="name" />
+        <TextInput source="id" />
         <TextInput source="dev_id" />
         <ReferenceInput source="model_id" reference="models">
-          <SelectInput />
+          <SelectInput optionText="id" />
         </ReferenceInput>
       </SimpleForm>
     </Create>

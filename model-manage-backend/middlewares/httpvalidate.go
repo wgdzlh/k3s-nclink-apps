@@ -10,11 +10,11 @@ import (
 )
 
 // auth middleware
-func AuthErrorHandler() gin.HandlerFunc {
+func AuthChecker() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.Request.Header.Get("Authorization")
 		if authHeader == "" {
-			rest.BadRequest(c, "Authorization header is missing.")
+			rest.Unauthorized(c, "Authorization header is missing.")
 			return
 		}
 

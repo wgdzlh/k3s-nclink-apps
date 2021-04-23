@@ -16,12 +16,12 @@ func setAuthRoute(router *gin.Engine) {
 	router.POST("/login", authController.Login)
 
 	authGroup := router.Group("/")
-	authGroup.Use(middlewares.AuthErrorHandler())
+	authGroup.Use(middlewares.AuthChecker())
 	authGroup.GET("/ping", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"message": "pong"})
 	})
 
-	authGroup.GET("/models", modelController.FetchAll)
+	authGroup.GET("/models", modelController.Fetch)
 	authGroup.GET("/models/:id", modelController.One)
 	authGroup.POST("/models", modelController.New)
 	authGroup.POST("/models/:id", modelController.Dup)

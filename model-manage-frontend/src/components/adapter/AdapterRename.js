@@ -4,9 +4,9 @@ const AdapterRename = (props) => {
   return (
     <Edit title="Rename Adapter" {...props}>
       <SimpleForm>
-        <TextInput source="name" />
+        <TextInput source="id" />
         <TextField source="dev_id" />
-        <TextField source="model_name" />
+        <TextField source="model_id" />
       </SimpleForm>
     </Edit>
   );

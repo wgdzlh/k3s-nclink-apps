@@ -6,24 +6,23 @@ import (
 	"k3s-nclink-apps/model-manage-backend/mqtt"
 	"log"
 
-	"github.com/kamva/mgm/v3"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type adapterService struct {
-	coll *mgm.Collection
+	DummyService
 }
 
-var AdapterServ = &adapterService{
-	coll: mgm.Coll(&entity.Adapter{}),
+var AdapterServ = &adapterService{}
+
+func init() {
+	AdapterServ.SetColl(&entity.Model{})
 }
 
 func (a *adapterService) Create(adapter *entity.Adapter) error {
 	ModelServ.Lock()
 	defer ModelServ.Unlock()
-	model, err := ModelServ.FindByName(adapter.ModelName)
+	model, err := ModelServ.FindById(adapter.ModelId)
 	if err != nil {
 		return err
 	}
@@ -34,15 +33,7 @@ func (a *adapterService) Create(adapter *entity.Adapter) error {
 	if err = ModelServ.update(model); err != nil {
 		return err
 	}
-	ctx := context.Background()
-	num, err := a.coll.EstimatedDocumentCount(ctx)
-	if num <= 1 {
-		_, err = a.coll.Indexes().CreateOne(ctx, mongo.IndexModel{
-			Keys:    bson.D{{Key: "name", Value: 1}},
-			Options: options.Index().SetUnique(true),
-		})
-	}
-	return err
+	return a.IndexId()
 }
 
 func (a *adapterService) Save(adapter *entity.Adapter, model *entity.Model) error {
@@ -55,20 +46,13 @@ func (a *adapterService) Save(adapter *entity.Adapter, model *entity.Model) erro
 	if err := ModelServ.update(model); err != nil {
 		return err
 	}
-	return a.coll.First(bson.M{"name": adapter.Name}, adapter)
+	return nil
 }
 
 // Find adapter
 func (a *adapterService) FindById(id string) (*entity.Adapter, error) {
-	ret := &entity.Adapter{}
-	err := a.coll.FindByID(id, ret)
-	return ret, err
-}
-
-func (a *adapterService) FindByName(name string) (*entity.Adapter, error) {
-	ret := &entity.Adapter{}
-	err := a.coll.First(bson.M{"name": name}, ret)
-	return ret, err
+	ret, err := a.DummyService.FindById(id)
+	return ret.(*entity.Adapter), err
 }
 
 func (a *adapterService) FindAll() ([]entity.Adapter, int64, error) {
@@ -81,9 +65,9 @@ func (a *adapterService) FindAll() ([]entity.Adapter, int64, error) {
 	return ret, num, err
 }
 
-func (a *adapterService) FindByModelName(modelName string) ([]entity.Adapter, error) {
+func (a *adapterService) FindByModelId(modelId string) ([]entity.Adapter, error) {
 	ret := []entity.Adapter{}
-	err := a.coll.SimpleFind(&ret, bson.M{"model_name": modelName})
+	err := a.coll.SimpleFind(&ret, bson.M{"model_id": modelId})
 	return ret, err
 }
 
@@ -93,20 +77,14 @@ func (a *adapterService) delete(adapter *entity.Adapter) error {
 	}
 	ModelServ.Lock()
 	defer ModelServ.Unlock()
-	model, err := ModelServ.FindByName(adapter.ModelName)
+	model, _ := ModelServ.FindById(adapter.ModelId)
 	if model.Used > 0 {
 		model.Used--
-		err = ModelServ.update(model)
+		if err := ModelServ.update(model); err != nil {
+			return err
+		}
 	}
-	return err
-}
-
-func (a *adapterService) DeleteByName(name string) error {
-	adapter, err := a.FindByName(name)
-	if err != nil {
-		return err
-	}
-	return a.delete(adapter)
+	return nil
 }
 
 func (a *adapterService) DeleteById(id string) error {
@@ -121,18 +99,18 @@ func (a *adapterService) update(adapter *entity.Adapter) error {
 	return a.coll.Update(adapter)
 }
 
-func (a *adapterService) changeModel(adapter *entity.Adapter, modelName string) error {
-	if adapter.ModelName == modelName {
+func (a *adapterService) changeModel(adapter *entity.Adapter, modelId string) error {
+	if adapter.ModelId == modelId {
 		return nil
 	}
 	ModelServ.Lock()
 	defer ModelServ.Unlock()
-	newModel, err := ModelServ.FindByName(modelName)
+	newModel, err := ModelServ.FindById(modelId)
 	if err != nil {
 		return err
 	}
-	model, _ := ModelServ.FindByName(adapter.ModelName)
-	adapter.ModelName = modelName
+	model, _ := ModelServ.FindById(adapter.ModelId)
+	adapter.ModelId = modelId
 	if err = a.update(adapter); err != nil {
 		return err
 	}
@@ -151,40 +129,39 @@ func (a *adapterService) UpdateById(id string, in *entity.Adapter) (changed bool
 	if err != nil {
 		return
 	}
-	if adapter.DevId == in.DevId && adapter.ModelName == in.ModelName {
+	if adapter.DevId == in.DevId && adapter.ModelId == in.ModelId {
 		return
 	}
 	adapter.DevId = in.DevId
-	if err = a.changeModel(adapter, in.ModelName); err != nil {
+	if err = a.changeModel(adapter, in.ModelId); err != nil {
 		return
 	}
-	mqtt.ResetModel(adapter.Name)
+	mqtt.ResetModel(adapter.Id)
 	return true, nil
 }
 
-func (a *adapterService) Rename(id, newName string) error {
+func (a *adapterService) Rename(id, newId string) error {
+	if id == newId {
+		return nil
+	}
 	adapter, err := a.FindById(id)
 	if err != nil {
 		return err
 	}
-	oldName := adapter.Name
-	if oldName != newName {
-		adapter.Name = newName
-		err = a.update(adapter)
-	}
-	return err
+	adapter.Id = newId
+	return a.update(adapter)
 }
 
 func (a *adapterService) ResetModel(adapters ...entity.Adapter) {
 	for _, adapter := range adapters {
-		log.Println("reset model on:", adapter.Name)
-		mqtt.ResetModel(adapter.Name)
+		log.Println("reset model on:", adapter.Id)
+		mqtt.ResetModel(adapter.Id)
 	}
 }
 
-func (a *adapterService) RenameModel(newName string, adapters ...entity.Adapter) error {
+func (a *adapterService) RenameModel(newId string, adapters ...entity.Adapter) error {
 	for _, adapter := range adapters {
-		adapter.ModelName = newName
+		adapter.ModelId = newId
 		if err := a.coll.Update(&adapter); err != nil {
 			return err
 		}
@@ -192,10 +169,10 @@ func (a *adapterService) RenameModel(newName string, adapters ...entity.Adapter)
 	return nil
 }
 
-func (a *adapterService) RenameModelFrom(oldName, newName string) error {
-	adapters, err := a.FindByModelName(oldName)
+func (a *adapterService) RenameModelFrom(oldId, newId string) error {
+	adapters, err := a.FindByModelId(oldId)
 	if err != nil {
 		return err
 	}
-	return a.RenameModel(newName, adapters...)
+	return a.RenameModel(newId, adapters...)
 }
