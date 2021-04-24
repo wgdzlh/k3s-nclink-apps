@@ -9,7 +9,7 @@ import (
 
 type modelService struct {
 	sync.Mutex
-	DummyService
+	mongoService
 }
 
 var ModelServ = &modelService{}
@@ -19,6 +19,15 @@ func init() {
 }
 
 // Model hooks
+func (d *Model) Creating() error {
+	// Call the DefaultModel Creating hook
+	if err := d.DefaultModel.Creating(); err != nil {
+		return err
+	}
+	d.Used = 0
+	return nil
+}
+
 func (d *Model) Deleted(result *mongo.DeleteResult) error {
 	log.Printf("deleted model %s.\n", d.Id)
 	if d.Id != "" && d.Used > 0 {
@@ -27,50 +36,42 @@ func (d *Model) Deleted(result *mongo.DeleteResult) error {
 	return nil
 }
 
-// Model CRUDs
-func (m *modelService) Save(model *Model) error {
-	return m.create(model)
+func (m *modelService) New() interface{} {
+	return &Model{}
 }
 
-func (m *modelService) FindById(id string) (*Model, error) {
-	ret := &Model{}
-	if err := m.findById(id, ret); err != nil {
-		return nil, err
-	}
-	return ret, nil
+func (m *modelService) IdOf(in interface{}) string {
+	return in.(*Model).Id
 }
 
-func (m *modelService) FindAll() ([]Model, error) {
-	ret := []Model{}
-	if err := m.findAll(&ret); err != nil {
-		return nil, err
-	}
-	return ret, nil
+func (m *modelService) Dup(id string, in interface{}) interface{} {
+	model := in.(*Model)
+	return &Model{Id: id, Def: model.Def}
 }
 
-func (m *modelService) FindWithFilter(filters map[string]string) ([]Model, int64, error) {
-	ret := []Model{}
-	num, err := m.findWithFilter(filters, &ret)
-	if err != nil {
-		return nil, 0, err
-	}
-	return ret, num, nil
+func (m *modelService) Slice() interface{} {
+	return &[]Model{}
+}
+
+func (m *modelService) LenOf(in interface{}) int64 {
+	return int64(len(*in.(*[]Model)))
 }
 
 func (m *modelService) DeleteById(id string) error {
-	model, err := m.FindById(id)
-	if err != nil {
+	model := &Model{}
+	if err := m.FindById(id, model); err != nil {
 		return err
 	}
 	return m.delete(model)
 }
 
-func (m *modelService) UpdateById(id string, in *Model) (changed bool, err error) {
-	model, err := m.FindById(id)
-	if err != nil || model.Def == in.Def {
+func (m *modelService) UpdateById(id string, in interface{}) (changed bool, err error) {
+	def := in.(*Model).Def
+	model := &Model{}
+	if err = m.FindById(id, model); err != nil || model.Def == def {
 		return
 	}
-	model.Def = in.Def
+	model.Def = def
 	err = m.update(model)
 	changed = err == nil
 	if !changed || model.Used == 0 {
@@ -88,13 +89,16 @@ func (m *modelService) Rename(id, newId string) error {
 	if id == newId {
 		return nil
 	}
-	model, err := m.FindById(id)
-	if err != nil {
+	model := &Model{}
+	if err := m.FindById(id, model); err != nil {
 		return err
 	}
 	model.Id = newId
-	if err = m.update(model); err == nil && model.Used > 0 {
+	if err := m.update(model); err != nil {
+		return err
+	}
+	if model.Used > 0 {
 		return AdapterServ.RenameModelFrom(id, newId)
 	}
-	return err
+	return nil
 }

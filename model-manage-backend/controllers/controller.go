@@ -1,145 +1,145 @@
 package controllers
 
 import (
-	"fmt"
 	"k3s-nclink-apps/data-source/service"
 	"k3s-nclink-apps/model-manage-backend/rest"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
 
-type DummyController struct{}
+type dummyController struct {
+	serv service.Service
+}
 
-// func (d DummyController) fetch(ret interface{}) {
-// var num int64
-// queries := c.Request.URL.Query()
-// if len(queries) == 0 {
-// 	all, err := service.ModelServ.FindAll()
-// 	if err != nil {
-// 		rest.InternalError(c, err.Error())
-// 		return
-// 	}
-// 	ret = all
-// 	num = int64(len(ret))
-// } else {
-// 	filter := make(map[string]string, len(queries))
-// 	for key, value := range queries {
-// 		filter[key] = value[0]
-// 	}
-// 	patial, _num, err := service.ModelServ.FindWithFilter(filter)
-// 	if err != nil {
-// 		rest.InternalError(c, err.Error())
-// 		return
-// 	}
-// 	ret = patial
-// 	num = _num
-// }
-// }
+func (d *dummyController) Fetch(c *gin.Context) {
+	ret := d.serv.Slice()
+	var num int64
+	queries := c.Request.URL.Query()
+	if len(queries) == 0 {
+		err := d.serv.FindAll(ret)
+		if err != nil {
+			rest.InternalError(c, err.Error())
+			return
+		}
+		num = d.serv.LenOf(ret)
+	} else {
+		filter := make(map[string]string, len(queries))
+		for key, value := range queries {
+			filter[key] = value[0]
+		}
+		_num, err := d.serv.FindWithFilter(filter, ret)
+		if err != nil {
+			rest.InternalError(c, err.Error())
+			return
+		}
+		num = _num
+	}
+	c.Header("X-Total-Count", strconv.FormatInt(num, 10))
+	// c.Header("Access-Control-Expose-Headers", "X-Total-Count")
+	rest.RetRaw(c, ret)
+}
 
-func (d DummyController) One(c *gin.Context) {
+func (d *dummyController) One(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
 		rest.BadRequest(c, "param 'id' not set.")
 		return
 	}
-	model, err := service.ModelServ.FindById(id)
-	if err != nil {
+	model := d.serv.New()
+	if err := d.serv.FindById(id, model); err != nil {
 		rest.BadRequest(c, err.Error())
 		return
 	}
 	rest.RetRaw(c, model)
 }
 
-func (d DummyController) New(c *gin.Context) {
-	var model service.Model
-	err := c.ShouldBindJSON(&model)
-	if err != nil {
+func (d *dummyController) Save(c *gin.Context) {
+	model := d.serv.New()
+	if err := c.ShouldBindJSON(model); err != nil {
 		rest.BadRequest(c, err.Error())
 		return
 	}
-	model.Used = 0
-	err = service.ModelServ.Save(&model)
-	if err != nil {
+	if err := d.serv.Save(model); err != nil {
 		rest.InternalError(c, err.Error())
 		return
 	}
-	msg := fmt.Sprintf("model %s created.", model.Id)
-	rest.CreatedRaw(c, gin.H{"id": model.Id, "msg": msg})
+	id := d.serv.IdOf(model)
+	rest.CreatedRaw(c, gin.H{"id": id, "msg": "created."})
 }
 
-func (d DummyController) Dup(c *gin.Context) {
+func (d *dummyController) Copy(c *gin.Context) {
 	id := c.Param("id")
 	newId := c.Query("new-id")
 	if id == "" || newId == "" {
-		rest.BadRequest(c, "param 'id' or 'new-id' not set.")
+		rest.BadRequest(c, "param 'id' or query 'new-id' not set.")
 		return
 	}
-	model, err := service.ModelServ.FindById(id)
-	if err != nil {
-		rest.BadRequest(c, "model not found.")
+	if id == newId {
+		rest.BadRequest(c, "duplicate id not alowed.")
 		return
 	}
-	newModel := service.NewModel(newId, model.Def)
-	err = service.ModelServ.Save(newModel)
-	if err != nil {
+	model := d.serv.New()
+	if err := d.serv.FindById(id, model); err != nil {
+		rest.BadRequest(c, id+" not found.")
+		return
+	}
+	newModel := d.serv.Dup(newId, model)
+	if err := d.serv.Save(newModel); err != nil {
 		rest.InternalError(c, err.Error())
 		return
 	}
-	msg := fmt.Sprintf("model %s duplicated as %s.", model.Id, newId)
-	rest.CreatedRaw(c, gin.H{"id": newId, "msg": msg})
+	rest.CreatedRaw(c, gin.H{"id": newId, "msg": id + "duplicated."})
 }
 
-func (d DummyController) Edit(c *gin.Context) {
-	var model service.Model
-	err := c.ShouldBindJSON(&model)
-	if err != nil {
+func (d *dummyController) Edit(c *gin.Context) {
+	model := d.serv.New()
+	if err := c.ShouldBindJSON(model); err != nil {
 		rest.BadRequest(c, err.Error())
 		return
 	}
-	if model.Id == "" {
+	modelId := d.serv.IdOf(model)
+	if modelId == "" {
 		rest.BadRequest(c, "'id' not set in JSON.")
 		return
 	}
 	id := c.Param("id")
-	if model.Id != id {
+	if modelId != id {
 		rest.BadRequest(c, "'id' not match to param.")
 		return
 	}
-	changed, err := service.ModelServ.UpdateById(id, &model)
+	changed, err := d.serv.UpdateById(id, model)
 	if err != nil {
 		rest.InternalError(c, err.Error())
 		return
 	}
-	res := "unchanged"
+	msg := "unchanged."
 	if changed {
-		res = "updated"
+		msg = "updated."
 	}
-	msg := fmt.Sprintf("model %s %s.", model.Id, res)
 	rest.RetRaw(c, gin.H{"id": id, "msg": msg})
 }
 
-func (d DummyController) Rename(c *gin.Context) {
+func (d *dummyController) Rename(c *gin.Context) {
 	id := c.Param("id")
 	newId := c.Query("new-id")
 	if id == "" || newId == "" {
-		rest.BadRequest(c, "param 'id' or 'new-id' not set.")
+		rest.BadRequest(c, "param 'id' or query 'new-id' not set.")
 		return
 	}
-	if err := service.ModelServ.Rename(id, newId); err != nil {
+	if err := d.serv.Rename(id, newId); err != nil {
 		rest.InternalError(c, err.Error())
 		return
 	}
-	msg := fmt.Sprintf("model %s renamed to %s.", id, newId)
-	rest.OK(c, msg)
+	rest.RetRaw(c, gin.H{"id": newId, "msg": id + " renamed."})
 }
 
-func (d DummyController) Delete(c *gin.Context) {
+func (d *dummyController) Delete(c *gin.Context) {
 	id := c.Param("id")
-	err := service.ModelServ.DeleteById(id)
+	err := d.serv.DeleteById(id)
 	if err != nil {
 		rest.InternalError(c, err.Error())
 		return
 	}
-	msg := fmt.Sprintf("model %s deleted.", id)
-	rest.OK(c, msg)
+	rest.RetRaw(c, gin.H{"id": id, "msg": "deleted."})
 }

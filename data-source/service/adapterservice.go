@@ -8,7 +8,7 @@ import (
 )
 
 type adapterService struct {
-	DummyService
+	mongoService
 }
 
 var AdapterServ = &adapterService{}
@@ -22,8 +22,9 @@ func (d *Adapter) Deleted(result *mongo.DeleteResult) error {
 	log.Printf("deleted adapter %s.\n", d.Id)
 	ModelServ.Lock()
 	defer ModelServ.Unlock()
-	model, _ := ModelServ.FindById(d.ModelId)
-	if model != nil && model.Used > 0 {
+	model := &Model{}
+	ModelServ.FindById(d.ModelId, model)
+	if model.Used > 0 {
 		model.Used--
 		if err := ModelServ.update(model); err != nil {
 			return err
@@ -32,27 +33,53 @@ func (d *Adapter) Deleted(result *mongo.DeleteResult) error {
 	return nil
 }
 
-// Adapter CRUDs
-func (a *adapterService) Create(adapter *Adapter) error {
+func (a *adapterService) New() interface{} {
+	return &Adapter{}
+}
+
+func (a *adapterService) Dup(id string, in interface{}) interface{} {
+	adapter := in.(*Adapter)
+	return &Adapter{Id: id, DevId: adapter.DevId, ModelId: adapter.ModelId}
+}
+
+func (a *adapterService) IdOf(in interface{}) string {
+	return in.(*Adapter).Id
+}
+
+func (a *adapterService) Slice() interface{} {
+	return &[]Adapter{}
+}
+
+func (a *adapterService) LenOf(in interface{}) int64 {
+	return int64(len(*in.(*[]Adapter)))
+}
+
+func (a *adapterService) Create(in interface{}) error {
+	adapter := in.(*Adapter)
 	ModelServ.Lock()
 	defer ModelServ.Unlock()
-	model, err := ModelServ.FindById(adapter.ModelId)
-	if err != nil {
+	model := &Model{}
+	if err := ModelServ.FindById(adapter.ModelId, model); err != nil {
 		return err
 	}
-	if err = a.create(adapter); err != nil {
+	if err := a.create(adapter); err != nil {
 		return err
 	}
 	model.Used++
-	if err = ModelServ.update(model); err != nil {
+	if err := ModelServ.update(model); err != nil {
 		return err
 	}
 	return a.IndexId()
 }
 
-func (a *adapterService) Save(adapter *Adapter, model *Model) error {
+func (a *adapterService) Save(in interface{}) error {
+	adapter := in.(*Adapter)
 	ModelServ.Lock()
 	defer ModelServ.Unlock()
+	model := &Model{}
+	if err := ModelServ.FindById(adapter.ModelId, model); err != nil {
+		return err
+	}
 	if err := a.create(adapter); err != nil {
 		return err
 	}
@@ -63,40 +90,15 @@ func (a *adapterService) Save(adapter *Adapter, model *Model) error {
 	return nil
 }
 
-func (a *adapterService) FindById(id string) (*Adapter, error) {
-	ret := &Adapter{}
-	if err := a.findById(id, ret); err != nil {
-		return nil, err
-	}
-	return ret, nil
-}
-
-func (a *adapterService) FindAll() ([]Adapter, error) {
-	ret := []Adapter{}
-	if err := a.findAll(&ret); err != nil {
-		return nil, err
-	}
-	return ret, nil
-}
-
-func (a *adapterService) FindWithFilter(filters map[string]string) ([]Adapter, int64, error) {
-	ret := []Adapter{}
-	num, err := a.findWithFilter(filters, &ret)
-	if err != nil {
-		return nil, 0, err
-	}
-	return ret, num, nil
-}
-
 func (a *adapterService) FindByModelId(modelId string) ([]Adapter, error) {
 	ret := []Adapter{}
-	_, err := a.findPartial(map[string]string{"model_id": modelId}, &ret)
+	_, err := a.FindPartial(map[string]string{"model_id": modelId}, &ret)
 	return ret, err
 }
 
 func (a *adapterService) DeleteById(id string) error {
-	adapter, err := a.FindById(id)
-	if err != nil {
+	adapter := &Adapter{}
+	if err := a.FindById(id, adapter); err != nil {
 		return err
 	}
 	return a.delete(adapter)
@@ -108,18 +110,18 @@ func (a *adapterService) changeModel(adapter *Adapter, modelId string) error {
 	}
 	ModelServ.Lock()
 	defer ModelServ.Unlock()
-	newModel, err := ModelServ.FindById(modelId)
-	if err != nil {
+	newModel, model := &Model{}, &Model{}
+	if err := ModelServ.FindById(modelId, newModel); err != nil {
 		return err
 	}
-	model, _ := ModelServ.FindById(adapter.ModelId)
+	ModelServ.FindById(adapter.ModelId, model)
 	adapter.ModelId = modelId
-	if err = a.update(adapter); err != nil {
+	if err := a.update(adapter); err != nil {
 		return err
 	}
-	if model != nil && model.Used > 0 {
+	if model.Used > 0 {
 		model.Used--
-		if err = ModelServ.update(model); err != nil {
+		if err := ModelServ.update(model); err != nil {
 			return err
 		}
 	}
@@ -127,16 +129,17 @@ func (a *adapterService) changeModel(adapter *Adapter, modelId string) error {
 	return ModelServ.update(newModel)
 }
 
-func (a *adapterService) UpdateById(id string, in *Adapter) (changed bool, err error) {
-	adapter, err := a.FindById(id)
-	if err != nil {
+func (a *adapterService) UpdateById(id string, in interface{}) (changed bool, err error) {
+	devId, modelId := in.(*Adapter).DevId, in.(*Adapter).ModelId
+	adapter := &Adapter{}
+	if err = a.FindById(id, adapter); err != nil {
 		return
 	}
-	if adapter.DevId == in.DevId && adapter.ModelId == in.ModelId {
+	if adapter.DevId == devId && adapter.ModelId == modelId {
 		return
 	}
-	adapter.DevId = in.DevId
-	if err = a.changeModel(adapter, in.ModelId); err != nil {
+	adapter.DevId = devId
+	if err = a.changeModel(adapter, modelId); err != nil {
 		return
 	}
 	mqtt.ResetModel(adapter.Id)
@@ -147,8 +150,8 @@ func (a *adapterService) Rename(id, newId string) error {
 	if id == newId {
 		return nil
 	}
-	adapter, err := a.FindById(id)
-	if err != nil {
+	adapter := &Adapter{}
+	if err := a.FindById(id, adapter); err != nil {
 		return err
 	}
 	adapter.Id = newId

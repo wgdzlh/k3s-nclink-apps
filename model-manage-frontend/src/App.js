@@ -1,5 +1,8 @@
 import { Admin, Resource, fetchUtils } from "react-admin";
 import jsonServerProvider from "ra-data-json-server";
+import SettingsIcon from "@material-ui/icons/Settings";
+import DnsRoundedIcon from "@material-ui/icons/DnsRounded";
+
 import AuthProvider from "./AuthProvider";
 
 import {
@@ -39,6 +42,7 @@ function App() {
     <Admin authProvider={AuthProvider} dataProvider={dataProvider}>
       <Resource
         name="models"
+        icon={SettingsIcon}
         list={ModelList}
         show={ModelShow}
         create={ModelCreate}
@@ -46,6 +50,7 @@ function App() {
       />
       <Resource
         name="adapters"
+        icon={DnsRoundedIcon}
         list={AdapterList}
         show={AdapterShow}
         create={AdapterCreate}
