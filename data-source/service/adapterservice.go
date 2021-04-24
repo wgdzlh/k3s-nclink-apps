@@ -1,12 +1,10 @@
 package service
 
 import (
-	"context"
-	"k3s-nclink-apps/data-source/entity"
 	"k3s-nclink-apps/model-manage-backend/mqtt"
 	"log"
 
-	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type adapterService struct {
@@ -16,17 +14,33 @@ type adapterService struct {
 var AdapterServ = &adapterService{}
 
 func init() {
-	AdapterServ.SetColl(&entity.Model{})
+	AdapterServ.setColl(&Adapter{})
 }
 
-func (a *adapterService) Create(adapter *entity.Adapter) error {
+// Adapter hooks
+func (d *Adapter) Deleted(result *mongo.DeleteResult) error {
+	log.Printf("deleted adapter %s.\n", d.Id)
+	ModelServ.Lock()
+	defer ModelServ.Unlock()
+	model, _ := ModelServ.FindById(d.ModelId)
+	if model != nil && model.Used > 0 {
+		model.Used--
+		if err := ModelServ.update(model); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// Adapter CRUDs
+func (a *adapterService) Create(adapter *Adapter) error {
 	ModelServ.Lock()
 	defer ModelServ.Unlock()
 	model, err := ModelServ.FindById(adapter.ModelId)
 	if err != nil {
 		return err
 	}
-	if err = a.coll.Create(adapter); err != nil {
+	if err = a.create(adapter); err != nil {
 		return err
 	}
 	model.Used++
@@ -36,10 +50,10 @@ func (a *adapterService) Create(adapter *entity.Adapter) error {
 	return a.IndexId()
 }
 
-func (a *adapterService) Save(adapter *entity.Adapter, model *entity.Model) error {
+func (a *adapterService) Save(adapter *Adapter, model *Model) error {
 	ModelServ.Lock()
 	defer ModelServ.Unlock()
-	if err := a.coll.Create(adapter); err != nil {
+	if err := a.create(adapter); err != nil {
 		return err
 	}
 	model.Used++
@@ -49,42 +63,35 @@ func (a *adapterService) Save(adapter *entity.Adapter, model *entity.Model) erro
 	return nil
 }
 
-// Find adapter
-func (a *adapterService) FindById(id string) (*entity.Adapter, error) {
-	ret, err := a.DummyService.FindById(id)
-	return ret.(*entity.Adapter), err
+func (a *adapterService) FindById(id string) (*Adapter, error) {
+	ret := &Adapter{}
+	if err := a.findById(id, ret); err != nil {
+		return nil, err
+	}
+	return ret, nil
 }
 
-func (a *adapterService) FindAll() ([]entity.Adapter, int64, error) {
-	ret := []entity.Adapter{}
-	err := a.coll.SimpleFind(&ret, bson.M{})
+func (a *adapterService) FindAll() ([]Adapter, error) {
+	ret := []Adapter{}
+	if err := a.findAll(&ret); err != nil {
+		return nil, err
+	}
+	return ret, nil
+}
+
+func (a *adapterService) FindWithFilter(filters map[string]string) ([]Adapter, int64, error) {
+	ret := []Adapter{}
+	num, err := a.findWithFilter(filters, &ret)
 	if err != nil {
 		return nil, 0, err
 	}
-	num, err := a.coll.EstimatedDocumentCount(context.Background())
-	return ret, num, err
+	return ret, num, nil
 }
 
-func (a *adapterService) FindByModelId(modelId string) ([]entity.Adapter, error) {
-	ret := []entity.Adapter{}
-	err := a.coll.SimpleFind(&ret, bson.M{"model_id": modelId})
+func (a *adapterService) FindByModelId(modelId string) ([]Adapter, error) {
+	ret := []Adapter{}
+	_, err := a.findPartial(map[string]string{"model_id": modelId}, &ret)
 	return ret, err
-}
-
-func (a *adapterService) delete(adapter *entity.Adapter) error {
-	if err := a.coll.Delete(adapter); err != nil {
-		return err
-	}
-	ModelServ.Lock()
-	defer ModelServ.Unlock()
-	model, _ := ModelServ.FindById(adapter.ModelId)
-	if model.Used > 0 {
-		model.Used--
-		if err := ModelServ.update(model); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func (a *adapterService) DeleteById(id string) error {
@@ -95,11 +102,7 @@ func (a *adapterService) DeleteById(id string) error {
 	return a.delete(adapter)
 }
 
-func (a *adapterService) update(adapter *entity.Adapter) error {
-	return a.coll.Update(adapter)
-}
-
-func (a *adapterService) changeModel(adapter *entity.Adapter, modelId string) error {
+func (a *adapterService) changeModel(adapter *Adapter, modelId string) error {
 	if adapter.ModelId == modelId {
 		return nil
 	}
@@ -114,7 +117,7 @@ func (a *adapterService) changeModel(adapter *entity.Adapter, modelId string) er
 	if err = a.update(adapter); err != nil {
 		return err
 	}
-	if model.Used > 0 {
+	if model != nil && model.Used > 0 {
 		model.Used--
 		if err = ModelServ.update(model); err != nil {
 			return err
@@ -124,7 +127,7 @@ func (a *adapterService) changeModel(adapter *entity.Adapter, modelId string) er
 	return ModelServ.update(newModel)
 }
 
-func (a *adapterService) UpdateById(id string, in *entity.Adapter) (changed bool, err error) {
+func (a *adapterService) UpdateById(id string, in *Adapter) (changed bool, err error) {
 	adapter, err := a.FindById(id)
 	if err != nil {
 		return
@@ -152,17 +155,10 @@ func (a *adapterService) Rename(id, newId string) error {
 	return a.update(adapter)
 }
 
-func (a *adapterService) ResetModel(adapters ...entity.Adapter) {
-	for _, adapter := range adapters {
-		log.Println("reset model on:", adapter.Id)
-		mqtt.ResetModel(adapter.Id)
-	}
-}
-
-func (a *adapterService) RenameModel(newId string, adapters ...entity.Adapter) error {
+func (a *adapterService) RenameModel(newId string, adapters ...Adapter) error {
 	for _, adapter := range adapters {
 		adapter.ModelId = newId
-		if err := a.coll.Update(&adapter); err != nil {
+		if err := a.update(&adapter); err != nil {
 			return err
 		}
 	}
@@ -175,4 +171,12 @@ func (a *adapterService) RenameModelFrom(oldId, newId string) error {
 		return err
 	}
 	return a.RenameModel(newId, adapters...)
+}
+
+// MQTT stuff
+func (a *adapterService) ResetModel(adapters ...Adapter) {
+	for _, adapter := range adapters {
+		log.Println("reset model on:", adapter.Id)
+		mqtt.ResetModel(adapter.Id)
+	}
 }

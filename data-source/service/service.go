@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"reflect"
 	"strconv"
 	"strings"
 
@@ -12,29 +11,16 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-// type Service interface {
-// 	Create(model interface{}) error
-// 	IndexId() error
-// 	Save(model interface{}) error
-// 	FindById(id string) (interface{}, error)
-// 	UpdateById(id string, in interface{}) (changed bool, err error)
-// 	Rename(id, newId string) error
-// 	DeleteById(id string) error
-// }
-
 type DummyService struct {
-	mt   reflect.Type
 	coll *mgm.Collection
 }
 
-func (d *DummyService) SetColl(model mgm.Model) {
-	d.mt = reflect.TypeOf(model).Elem()
+func (d *DummyService) setColl(model mgm.Model) {
 	d.coll = mgm.Coll(model)
 }
 
 func (d *DummyService) Create(model mgm.Model) error {
-	err := d.coll.Create(model)
-	if err != nil {
+	if err := d.create(model); err != nil {
 		return err
 	}
 	return d.IndexId()
@@ -49,19 +35,49 @@ func (d *DummyService) IndexId() error {
 	return err
 }
 
-func (d *DummyService) Save(model mgm.Model) error {
+func (d *DummyService) findById(id string, ret mgm.Model) error {
+	if err := d.coll.First(bson.M{"id": id}, ret); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (d *DummyService) findAll(ret interface{}) error {
+	if err := d.coll.SimpleFind(ret, bson.M{}); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (d *DummyService) findPartial(filters map[string]string, ret interface{}) (interface{}, error) {
+	fil, opts := transFilters(filters)
+	if err := d.coll.SimpleFind(ret, fil, opts); err != nil {
+		return nil, err
+	}
+	return fil, nil
+}
+
+func (d *DummyService) findWithFilter(filters map[string]string, ret interface{}) (int64, error) {
+	fil, err := d.findPartial(filters, ret)
+	if err != nil {
+		return 0, err
+	}
+	return d.coll.CountDocuments(context.Background(), fil)
+}
+
+func (d *DummyService) create(model mgm.Model) error {
 	return d.coll.Create(model)
 }
 
-func (d *DummyService) FindById(id string) (interface{}, error) {
-	ret := reflect.New(d.mt).Interface().(mgm.Model)
-	if err := d.coll.First(bson.M{"id": id}, ret); err != nil {
-		return nil, err
-	}
-	return ret, nil
+func (d *DummyService) delete(model mgm.Model) error {
+	return d.coll.Delete(model)
 }
 
-func TransFilters(filters map[string]string) (bson.M, *options.FindOptions) {
+func (d *DummyService) update(model mgm.Model) error {
+	return d.coll.Update(model)
+}
+
+func transFilters(filters map[string]string) (bson.M, *options.FindOptions) {
 	fil := bson.M{}
 	opts := &options.FindOptions{}
 	var skip, limit int64

@@ -12,11 +12,3 @@ type User struct {
 	Access           string `json:"access" bson:"access"`
 	Password         string `json:"password" bson:"password"`
 }
-
-func NewUser(name, access, password string) *User {
-	return &User{
-		Name:     name,
-		Access:   access,
-		Password: password,
-	}
-}

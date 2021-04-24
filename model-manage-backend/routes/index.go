@@ -29,7 +29,7 @@ func setAuthRoute(router *gin.Engine) {
 	authGroup.PUT("/models/:id/rename", modelController.Rename)
 	authGroup.DELETE("/models/:id", modelController.Delete)
 
-	authGroup.GET("/adapters", adapterController.FetchAll)
+	authGroup.GET("/adapters", adapterController.Fetch)
 	authGroup.GET("/adapters/:id", adapterController.One)
 	authGroup.POST("/adapters", adapterController.New)
 	authGroup.POST("/adapters/:id", adapterController.Dup)

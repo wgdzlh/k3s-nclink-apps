@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"k3s-nclink-apps/data-source/entity"
 	"k3s-nclink-apps/utils"
 
 	"github.com/dgrijalva/jwt-go"
@@ -22,10 +21,10 @@ type userService struct {
 var UserServ = &userService{
 	TokenKey:   []byte(utils.EnvVar("TOKEN_KEY", "")), // JWT token key
 	AccessType: utils.EnvVar("USER_ACCESS_TYPE", "ro"),
-	coll:       mgm.Coll(&entity.User{}),
+	coll:       mgm.Coll(&User{}),
 }
 
-func (u *userService) Create(user *entity.User) error {
+func (u *userService) Create(user *User) error {
 	hash, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.MinCost)
 	if err != nil {
 		return err
@@ -47,16 +46,15 @@ func (u *userService) Create(user *entity.User) error {
 }
 
 // Find user
-func (u *userService) FindByName(name string) (*entity.User, error) {
-	ret := &entity.User{}
+func (u *userService) FindByName(name string) (*User, error) {
+	ret := &User{}
 	err := u.coll.First(bson.M{"name": name}, ret)
 	return ret, err
 }
 
-func (u *userService) GetJwtToken(user *entity.User) (tokenString string, err error) {
+func (u *userService) GetJwtToken(user *User) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"name": user.Name,
 	})
-	tokenString, err = token.SignedString(u.TokenKey)
-	return
+	return token.SignedString(u.TokenKey)
 }

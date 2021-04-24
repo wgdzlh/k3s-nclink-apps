@@ -2,7 +2,7 @@ package conv
 
 import (
 	pb "k3s-nclink-apps/configmodel"
-	"k3s-nclink-apps/data-source/entity"
+	"k3s-nclink-apps/data-source/service"
 
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
@@ -16,7 +16,7 @@ func MessageToString(msg proto.Message) (string, error) {
 	return string(json), err
 }
 
-func DbModelToWireModel(in *entity.Model) (*pb.Model, error) {
+func DbModelToWireModel(in *service.Model) (*pb.Model, error) {
 	ret := &pb.Model{}
 	err := protojson.Unmarshal([]byte(in.Def), ret)
 	if err != nil {

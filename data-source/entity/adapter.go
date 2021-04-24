@@ -12,11 +12,3 @@ type Adapter struct {
 	DevId            string `json:"dev_id" bson:"dev_id"`
 	ModelId          string `json:"model_id" bson:"model_id"`
 }
-
-func NewAdapter(id, devId, modelId string) *Adapter {
-	return &Adapter{
-		Id:      id,
-		DevId:   devId,
-		ModelId: modelId,
-	}
-}

@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"fmt"
-	"k3s-nclink-apps/data-source/entity"
 	"k3s-nclink-apps/data-source/service"
 	"k3s-nclink-apps/model-manage-backend/rest"
 
@@ -12,7 +11,7 @@ import (
 type ModelController struct{}
 
 func (m ModelController) Fetch(c *gin.Context) {
-	var ret []entity.Model
+	var ret []service.Model
 	var num int64
 	queries := c.Request.URL.Query()
 	if len(queries) == 0 {
@@ -56,7 +55,7 @@ func (m ModelController) One(c *gin.Context) {
 }
 
 func (m ModelController) New(c *gin.Context) {
-	var model entity.Model
+	var model service.Model
 	err := c.ShouldBindJSON(&model)
 	if err != nil {
 		rest.BadRequest(c, err.Error())
@@ -84,7 +83,7 @@ func (m ModelController) Dup(c *gin.Context) {
 		rest.BadRequest(c, "model not found.")
 		return
 	}
-	newModel := entity.NewModel(newId, model.Def)
+	newModel := service.NewModel(newId, model.Def)
 	err = service.ModelServ.Save(newModel)
 	if err != nil {
 		rest.InternalError(c, err.Error())
@@ -95,7 +94,7 @@ func (m ModelController) Dup(c *gin.Context) {
 }
 
 func (m ModelController) Edit(c *gin.Context) {
-	var model entity.Model
+	var model service.Model
 	err := c.ShouldBindJSON(&model)
 	if err != nil {
 		rest.BadRequest(c, err.Error())

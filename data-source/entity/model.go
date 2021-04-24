@@ -12,10 +12,3 @@ type Model struct {
 	Used             uint32 `json:"used" bson:"used"`
 	Def              string `json:"def" bson:"def"`
 }
-
-func NewModel(id, def string) *Model {
-	return &Model{
-		Id:  id,
-		Def: def,
-	}
-}

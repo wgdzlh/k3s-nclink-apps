@@ -1,14 +1,13 @@
 package controllers
 
 import (
-	"k3s-nclink-apps/data-source/entity"
 	"k3s-nclink-apps/data-source/service"
 )
 
 // DistController is for model distribution logic
 type DistController struct{}
 
-func (a DistController) Fetch(hostname string) (model *entity.Model, devId string, err error) {
+func (a DistController) Fetch(hostname string) (model *service.Model, devId string, err error) {
 	adapter, err := service.AdapterServ.FindById(hostname)
 	if err != nil {
 		return

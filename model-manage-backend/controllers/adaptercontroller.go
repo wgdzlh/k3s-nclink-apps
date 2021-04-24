@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"fmt"
-	"k3s-nclink-apps/data-source/entity"
 	"k3s-nclink-apps/data-source/service"
 	"k3s-nclink-apps/model-manage-backend/rest"
 
@@ -11,13 +10,33 @@ import (
 
 type AdapterController struct{}
 
-func (a AdapterController) FetchAll(c *gin.Context) {
-	ret, num, err := service.AdapterServ.FindAll()
-	if err != nil {
-		rest.InternalError(c, err.Error())
-		return
+func (m AdapterController) Fetch(c *gin.Context) {
+	var ret []service.Adapter
+	var num int64
+	queries := c.Request.URL.Query()
+	if len(queries) == 0 {
+		all, err := service.AdapterServ.FindAll()
+		if err != nil {
+			rest.InternalError(c, err.Error())
+			return
+		}
+		ret = all
+		num = int64(len(ret))
+	} else {
+		filter := make(map[string]string, len(queries))
+		for key, value := range queries {
+			filter[key] = value[0]
+		}
+		patial, _num, err := service.AdapterServ.FindWithFilter(filter)
+		if err != nil {
+			rest.InternalError(c, err.Error())
+			return
+		}
+		ret = patial
+		num = _num
 	}
 	c.Header("X-Total-Count", fmt.Sprint(num))
+	// c.Header("Access-Control-Expose-Headers", "X-Total-Count")
 	rest.RetRaw(c, ret)
 }
 
@@ -36,7 +55,7 @@ func (a AdapterController) One(c *gin.Context) {
 }
 
 func (a AdapterController) New(c *gin.Context) {
-	var da entity.Adapter
+	var da service.Adapter
 	err := c.ShouldBindJSON(&da)
 	if err != nil {
 		rest.BadRequest(c, err.Error())
@@ -47,7 +66,7 @@ func (a AdapterController) New(c *gin.Context) {
 		rest.BadRequest(c, "model not found.")
 		return
 	}
-	newAdapter := entity.NewAdapter(da.Id, da.DevId, model.Id)
+	newAdapter := service.NewAdapter(da.Id, da.DevId, model.Id)
 	err = service.AdapterServ.Save(newAdapter, model)
 	if err != nil {
 		rest.InternalError(c, err.Error())
@@ -74,7 +93,7 @@ func (a AdapterController) Dup(c *gin.Context) {
 		rest.BadRequest(c, "model not found.")
 		return
 	}
-	newAdapter := entity.NewAdapter(newId, adapter.DevId, adapter.ModelId)
+	newAdapter := service.NewAdapter(newId, adapter.DevId, adapter.ModelId)
 	err = service.AdapterServ.Save(newAdapter, model)
 	if err != nil {
 		rest.InternalError(c, err.Error())
@@ -85,7 +104,7 @@ func (a AdapterController) Dup(c *gin.Context) {
 }
 
 func (a AdapterController) Edit(c *gin.Context) {
-	var da entity.Adapter
+	var da service.Adapter
 	err := c.ShouldBindJSON(&da)
 	if err != nil {
 		rest.BadRequest(c, err.Error())
@@ -105,7 +124,7 @@ func (a AdapterController) Edit(c *gin.Context) {
 		rest.BadRequest(c, "model not found.")
 		return
 	}
-	newAdapter := entity.NewAdapter(da.Id, da.DevId, model.Id)
+	newAdapter := service.NewAdapter(da.Id, da.DevId, model.Id)
 	changed, err := service.AdapterServ.UpdateById(id, newAdapter)
 	if err != nil {
 		rest.InternalError(c, err.Error())
