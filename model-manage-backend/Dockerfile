@@ -4,13 +4,13 @@ COPY go.mod .
 COPY go.sum .
 RUN go mod download
 COPY . .
-RUN CGO_ENABLED=0 go build -o mode_manage ./mode-manage-backend/main.go
+RUN CGO_ENABLED=0 go build -o model_manage ./model-manage-backend/main.go
 
 
 FROM scratch AS server
 WORKDIR /app
-COPY ./mode-manage-backend/prod.env .env
-COPY --from=build /app/mode_manage .
+COPY ./model-manage-backend/prod.env .env
+COPY --from=build /app/model_manage .
 
-EXPOSE 8082 8092
-ENTRYPOINT ["./mode_manage"]
+EXPOSE 8080 8090
+ENTRYPOINT ["./model_manage"]

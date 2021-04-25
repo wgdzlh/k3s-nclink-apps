@@ -1,7 +1,7 @@
 package service
 
 import (
-	"k3s-nclink-apps/model-manage-backend/mqtt"
+	"k3s-nclink-apps/data-source/mqtt"
 	"log"
 
 	"go.mongodb.org/mongo-driver/mongo"

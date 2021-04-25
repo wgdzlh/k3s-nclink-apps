@@ -8,7 +8,7 @@ import (
 	log "google.golang.org/grpc/grpclog"
 )
 
-// model manage server
+// TODO: grpc model manage server
 type modelManageServer struct {
 	pb.UnimplementedModelManageServer
 }
