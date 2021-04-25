@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: modelman-backend
+  namespace: nclink
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: modelman-backend
+  revisionHistoryLimit: 1
+  template:
+    metadata:
+      labels:
+        app: modelman-backend
+        nclink: "true"
+    spec:
+      containers:
+        - name: modelman-backend
+          image: nanocpu/nclink-modelmanage-backend:1.0.0
+          resources:
+            limits:
+              memory: "128Mi"
+              cpu: "500m"
+          ports:
+            - containerPort: 8080
+          env:
+            - name: MONGO_USER
+              valueFrom:
+                secretKeyRef:
+                  name: mongodb-secret
+                  key: mongo-root-username
+            - name: MONGO_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: mongodb-secret
+                  key: mongo-root-password
+            - name: MONGO_ADDR
+              valueFrom:
+                configMapKeyRef:
+                  name: mongodb-configmap
+                  key: databaseURL
+            - name: MONGO_DB
+              value: "test"
+            - name: MQTT_ADDR
+              value: "tcp://mqtt-broker-headless:2883"
+            - name: MQTT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: adapater-mqtt
+                  key: username
+            - name: MQTT_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: adapater-mqtt
+                  key: password
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: nclink-role
+                    operator: In
+                    values:
+                      - broker
+      tolerations:
+        - effect: NoExecute
+          key: nclink
+          operator: Equal
+          value: "true"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: modelman-back
+  namespace: nclink
+spec:
+  selector:
+    app: modelman-backend
+  ports:
+    - port: 8080
+      targetPort: 8080

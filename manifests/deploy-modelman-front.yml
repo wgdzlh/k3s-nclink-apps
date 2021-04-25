@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: modelman-frontend
+  namespace: nclink
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: modelman-frontend
+  revisionHistoryLimit: 1
+  template:
+    metadata:
+      labels:
+        app: modelman-frontend
+        nclink: "true"
+    spec:
+      containers:
+        - name: modelman-frontend
+          image: nanocpu/nclink-modelmanage-frontend:1.0.1
+          resources:
+            limits:
+              memory: "128Mi"
+              cpu: "500m"
+          ports:
+            - containerPort: 80
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: modelman-front
+  namespace: nclink
+spec:
+  selector:
+    app: modelman-frontend
+  ports:
+    - port: 80
+      targetPort: 80
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: modelman-ingress
+  namespace: nclink
+  annotations:
+    kubernetes.io/ingress.class: traefik
+    ingress.kubernetes.io/ssl-redirect: "true"
+    traefik.frontend.rule.type: PathPrefixStrip
+spec:
+  tls:
+    - hosts:
+        - model-manage.lightcat.pub
+      secretName: nclink-ingress-tls
+  rules:
+    - host: model-manage.lightcat.pub
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: modelman-front
+                port:
+                  number: 80
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: modelman-back
+                port:
+                  number: 8080

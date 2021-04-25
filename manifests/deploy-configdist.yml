@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: config-distribute
+  namespace: nclink
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: config-distribute
+  revisionHistoryLimit: 1
+  template:
+    metadata:
+      labels:
+        app: config-distribute
+        nclink: "true"
+    spec:
+      containers:
+        - name: config-distribute
+          image: nanocpu/nclink-configdist:1.0.1
+          resources:
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+          ports:
+            - containerPort: 8082
+          volumeMounts:
+            - mountPath: /app/cert
+              name: configdist-tls
+              readOnly: true
+          env:
+            - name: MONGO_USER
+              valueFrom:
+                secretKeyRef:
+                  name: mongodb-secret
+                  key: mongo-root-username
+            - name: MONGO_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: mongodb-secret
+                  key: mongo-root-password
+            - name: MONGO_ADDR
+              valueFrom:
+                configMapKeyRef:
+                  name: mongodb-configmap
+                  key: databaseURL
+            - name: MONGO_DB
+              value: "test"
+            - name: SERVER_CRT
+              value: "/app/cert/crt"
+            - name: SERVER_KEY
+              value: "/app/cert/key"
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: nclink-role
+                    operator: In
+                    values:
+                      - broker
+      tolerations:
+        - effect: NoExecute
+          key: nclink
+          operator: Equal
+          value: "true"
+      volumes:
+        - name: configdist-tls
+          secret:
+            secretName: configdist-tls
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: configdist
+  namespace: nclink
+spec:
+  clusterIP: None
+  selector:
+    app: config-distribute

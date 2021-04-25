@@ -28,7 +28,7 @@ message OpRet {
 
 message Sample {
   string sensor = 1;
-  uint32 rate = 2;
+  float rate = 2;
 }
 
 message Query {

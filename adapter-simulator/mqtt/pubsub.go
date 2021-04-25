@@ -16,7 +16,7 @@ import (
 
 const (
 	samplePubFormat     = "nclink/sample/%s/%s"
-	sampleMsgFormat     = "{\"sample_value\": %v}"
+	sampleMsgFormat     = "{\"sensor\":\"%s\",\"sample_value\": %v}"
 	querySubFormat      = "nclink/query/request/%s/%s"
 	queryPubFormat      = "nclink/query/response/%s/%s"
 	queryMsgFormat      = "{\"query_value\": %v}"
@@ -186,7 +186,7 @@ func Run(inModel *config.Model) {
 
 	for i, topic := range samplePubs {
 		sensor := samples[i].Sensor
-		interval := time.Duration(1000 / samples[i].Rate)
+		interval := time.Duration(1000. / samples[i].Rate)
 		ticker := time.NewTicker(interval * time.Millisecond)
 		go func(topic string) {
 			for {
@@ -196,9 +196,9 @@ func Run(inModel *config.Model) {
 					return
 				case <-ticker.C:
 					value := rand.Intn(100)
-					text := fmt.Sprintf(sampleMsgFormat, value)
+					text := fmt.Sprintf(sampleMsgFormat, sensor, value)
 					token = client.Publish(topic, 0, false, text)
-					log.Printf("Sample %s: %v\n", sensor, value)
+					// log.Printf("Sample %s: %v\n", sensor, value)
 					token.Wait()
 				}
 			}
