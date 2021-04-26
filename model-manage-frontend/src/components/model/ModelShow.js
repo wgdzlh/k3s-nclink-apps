@@ -4,6 +4,10 @@ import {
   TextField,
   DateField,
   NumberField,
+  FunctionField,
+  ReferenceManyField,
+  SingleFieldList,
+  ChipField,
 } from "react-admin";
 
 const ModelShow = (props) => {
@@ -15,6 +19,23 @@ const ModelShow = (props) => {
         <DateField showTime source="updated_at" />
         <NumberField source="used" />
         <TextField source="def" />
+        <FunctionField
+          label="Related adapters"
+          render={(record) => {
+            if (record.used === 0) return "None";
+            return (
+              <ReferenceManyField
+                reference="adapters"
+                target="model_id"
+                sort={{ field: "id", order: "ASC" }}
+              >
+                <SingleFieldList linkType="show">
+                  <ChipField source="id" />
+                </SingleFieldList>
+              </ReferenceManyField>
+            );
+          }}
+        />
       </SimpleShowLayout>
     </Show>
   );

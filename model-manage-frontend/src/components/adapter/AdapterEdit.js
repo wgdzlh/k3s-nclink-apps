@@ -12,7 +12,11 @@ const AdapterEdit = (props) => {
       <SimpleForm>
         <TextInput disabled source="id" />
         <TextInput source="dev_id" />
-        <ReferenceInput source="model_id" reference="models">
+        <ReferenceInput
+          source="model_id"
+          reference="models"
+          sort={{ field: "id", order: "ASC" }}
+        >
           <SelectInput optionText="id" />
         </ReferenceInput>
       </SimpleForm>
