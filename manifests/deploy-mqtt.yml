@@ -77,8 +77,6 @@ spec:
               cpu: "500m"
           ports:
             - containerPort: 2883
-          # stdin: false
-          # tty: false
           volumeMounts:
             - mountPath: /mosquitto/config
               name: config
@@ -94,15 +92,8 @@ spec:
           #   valueFrom:
           #     fieldRef:
           #       fieldPath: spec.nodeName
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-              - matchExpressions:
-                  - key: nclink-role
-                    operator: In
-                    values:
-                      - broker
+      nodeSelector:
+        nclink-role: broker
       tolerations:
         - effect: NoExecute
           key: nclink

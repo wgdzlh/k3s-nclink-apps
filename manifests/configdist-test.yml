@@ -1,0 +1,17 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: configdist-test
+  namespace: nclink
+spec:
+  type: NodePort
+  externalIPs:
+    - 172.16.1.11
+  externalTrafficPolicy: Local
+  selector:
+    app: config-distribute
+  ports:
+    - port: 8082
+      targetPort: 8082
+      nodePort: 30011

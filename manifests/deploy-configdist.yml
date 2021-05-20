@@ -50,15 +50,8 @@ spec:
               value: "/app/cert/crt"
             - name: SERVER_KEY
               value: "/app/cert/key"
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-              - matchExpressions:
-                  - key: nclink-role
-                    operator: In
-                    values:
-                      - broker
+      nodeSelector:
+        nclink-role: broker
       tolerations:
         - effect: NoExecute
           key: nclink

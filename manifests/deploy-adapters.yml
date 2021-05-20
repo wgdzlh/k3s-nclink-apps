@@ -78,15 +78,8 @@ spec:
                   key: password
             - name: CA_CRT
               value: "/app/cert/ca"
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-              - matchExpressions:
-                  - key: nclink-role
-                    operator: In
-                    values:
-                      - adapter
+      nodeSelector:
+        nclink-role: adapter
       tolerations:
         - effect: NoExecute
           key: nclink

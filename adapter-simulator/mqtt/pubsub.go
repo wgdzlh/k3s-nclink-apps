@@ -59,7 +59,7 @@ func onQueryMessage(client mqtt.Client, msg mqtt.Message) {
 	topic := fmt.Sprintf(queryPubFormat, devId, sensor)
 	value := rand.Intn(100)
 	text := fmt.Sprintf(queryMsgFormat, value)
-	token := client.Publish(topic, 0, false, text)
+	token := client.Publish(topic, 1, false, text)
 	log.Printf("Query %s: %v\n", sensor, value)
 	token.Wait()
 }
@@ -160,7 +160,7 @@ func Run(inModel *config.Model) {
 		if token.Wait() && token.Error() != nil {
 			panic(token.Error())
 		}
-		client.Subscribe(resetModelSub, 1, onResetModel).Wait()
+		client.Subscribe(resetModelSub, 2, onResetModel).Wait()
 	} else {
 		log.Println("restart mqtt subpub.")
 		if len(querySubs) > 0 {
@@ -179,7 +179,7 @@ func Run(inModel *config.Model) {
 	}
 
 	for _, topic := range tweakSubs {
-		token = client.Subscribe(topic, 1, onTweakMessage)
+		token = client.Subscribe(topic, 2, onTweakMessage)
 		token.Wait()
 		log.Printf("Subscribed to tweak topic %s\n", topic)
 	}

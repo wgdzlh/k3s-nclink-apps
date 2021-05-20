@@ -61,15 +61,8 @@ spec:
                 secretKeyRef:
                   name: mongodb-secret
                   key: mongo-root-password
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-              - matchExpressions:
-                  - key: nclink-role
-                    operator: In
-                    values:
-                      - broker
+      nodeSelector:
+        nclink-role: broker
       tolerations:
         - effect: NoExecute
           key: nclink
