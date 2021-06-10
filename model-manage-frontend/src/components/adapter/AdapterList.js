@@ -15,7 +15,6 @@ const AdapterList = (props) => {
     <List {...props}>
       <Datagrid rowClick="show">
         <TextField source="id" color="primary" />
-        {/* <Button label="RN"  color="secondary" /> */}
         <DateField source="created_at" />
         <DateField source="updated_at" />
         <TextField source="dev_id" />

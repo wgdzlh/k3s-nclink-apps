@@ -15,14 +15,15 @@ const ModelList = (props) => {
     <List {...props}>
       <Datagrid rowClick="show">
         <TextField source="id" color="primary" />
-        {/* <Button label="RN"  color="secondary" /> */}
         <DateField source="created_at" />
         <DateField source="updated_at" />
         <NumberField source="used" />
         <FunctionField
-          label="Def"
+          source="def"
           render={(record) =>
-            record.def.slice(0, 50) + (record.def.length > 50 ? " ..." : "")
+            "def" in record
+              ? record.def.slice(0, 50) + (record.def.length > 50 ? " ..." : "")
+              : ""
           }
         />
         <EditButton label="" />

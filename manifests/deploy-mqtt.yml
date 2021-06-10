@@ -87,11 +87,6 @@ spec:
               name: log
             - mountPath: /mosquitto/data
               name: data
-          # env:
-          # - name: MY_NODE_NAME
-          #   valueFrom:
-          #     fieldRef:
-          #       fieldPath: spec.nodeName
       nodeSelector:
         nclink-role: broker
       tolerations:
