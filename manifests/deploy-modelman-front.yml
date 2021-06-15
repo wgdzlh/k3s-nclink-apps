@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: modelman-frontend
-          image: nanocpu/nclink-modelmanage-frontend:1.0.2
+          image: nanocpu/nclink-modelmanage-frontend:1.0.3
           resources:
             limits:
               memory: "128Mi"

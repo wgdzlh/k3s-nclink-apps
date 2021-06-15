@@ -1,5 +1,5 @@
 PREFIX="nanocpu/nclink-"
-VERSION="1.0.2"
+VERSION="1.0.3"
 PLATFORM="linux/amd64,linux/arm64,linux/arm/v7"
 
 #docker buildx build -f ./config-distribute/Dockerfile -t ${PREFIX}configdist:${VERSION} --platform $PLATFORM --push .
